@@ -30,6 +30,7 @@ export default function ChatPanel({ lectures }) {
         role: 'assistant',
         content: res.answer,
         sources: res.sources,
+        agent: res.agent,
       }])
     } catch (e) {
       setMessages(prev => [...prev, {
@@ -109,6 +110,11 @@ export default function ChatPanel({ lectures }) {
                 <p className="text-sm">{m.content}</p>
               ) : (
                 <>
+                  {m.agent && (
+                    <span className="inline-block text-[10px] px-2 py-0.5 rounded bg-surface-2 text-text-dim mb-1">
+                      🤖 {m.agent}
+                    </span>
+                  )}
                   <div className="markdown-body text-sm">
                     <Markdown>{m.content}</Markdown>
                   </div>

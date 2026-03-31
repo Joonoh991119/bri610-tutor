@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
-import { MessageCircle, Search, FileQuestion, BookOpen, Zap } from 'lucide-react'
+import { MessageCircle, Search, FileQuestion, BookOpen, Zap, ClipboardCheck } from 'lucide-react'
 import { api } from './api'
 import ChatPanel from './components/ChatPanel'
 import SearchPanel from './components/SearchPanel'
 import QuizPanel from './components/QuizPanel'
 import SummaryPanel from './components/SummaryPanel'
 import SlideViewer from './components/SlideViewer'
+import ExamPanel from './components/ExamPanel'
 
 const TABS = [
   { id: 'chat', label: 'Tutor', icon: MessageCircle },
   { id: 'search', label: 'Search', icon: Search },
   { id: 'quiz', label: 'Quiz', icon: FileQuestion },
+  { id: 'exam', label: 'Exam', icon: ClipboardCheck },
   { id: 'summary', label: 'Summary', icon: BookOpen },
   { id: 'slides', label: 'Slides', icon: Zap },
 ]
@@ -27,7 +29,6 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Header */}
       <header className="flex items-center gap-4 px-6 py-3 border-b border-border bg-surface">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-bg font-bold text-sm">N</div>
@@ -55,16 +56,18 @@ export default function App() {
         <div className="ml-auto flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${status?.status === 'ok' ? 'bg-success' : 'bg-error'}`} />
           <span className="text-[11px] text-text-dim">
-            {status?.status === 'ok' ? `${status.model} · ${status.db?.total} docs` : 'Backend offline'}
+            {status?.status === 'ok'
+              ? `${status.chat_model?.split('/')[1]?.split(':')[0] || '?'} · ${status.db?.total} docs · ${status.db?.embedded || 0} embedded`
+              : 'Backend offline'}
           </span>
         </div>
       </header>
 
-      {/* Content */}
       <main className="flex-1 overflow-hidden">
         {tab === 'chat' && <ChatPanel lectures={lectures} />}
         {tab === 'search' && <SearchPanel lectures={lectures} />}
         {tab === 'quiz' && <QuizPanel lectures={lectures} />}
+        {tab === 'exam' && <ExamPanel lectures={lectures} />}
         {tab === 'summary' && <SummaryPanel lectures={lectures} />}
         {tab === 'slides' && <SlideViewer lectures={lectures} />}
       </main>
