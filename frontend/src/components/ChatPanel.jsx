@@ -55,7 +55,7 @@ export default function ChatPanel({ lectures }) {
           ))}
         </select>
         <div className="flex gap-1">
-          {['tutor', 'derive', 'quiz'].map(m => (
+          {['auto', 'tutor', 'derive', 'exam'].map(m => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -63,7 +63,7 @@ export default function ChatPanel({ lectures }) {
                 mode === m ? 'bg-accent/20 text-accent' : 'text-text-dim hover:bg-surface'
               }`}
             >
-              {m === 'tutor' ? '💬 Tutor' : m === 'derive' ? '📐 Derive' : '❓ Quiz'}
+              {m === 'auto' ? '🤖 Auto' : m === 'tutor' ? '💬 Tutor' : m === 'derive' ? '📐 Derive' : '📝 Exam'}
             </button>
           ))}
         </div>

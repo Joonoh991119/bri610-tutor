@@ -2,89 +2,88 @@
 
 AI-powered study assistant for BRI610 Computational Neuroscience (SNU BCS, Prof. Jeehyun Kwag).
 
-RAG-based tutoring over lecture slides + Dayan & Abbott textbook, powered by local LLM (Ollama).
-
-## Features
-
-- **Tutor Chat** — Ask questions, get answers with slide/textbook citations
-- **Math Derivations** — Step-by-step equation derivations (Nernst, GHK, HH, Cable)
-- **Quiz Generator** — Auto-generated practice questions by topic/difficulty
-- **Exam Summaries** — Per-lecture key concept summaries
-- **Slide Browser** — Visual slide gallery with navigation
-- **Full-text Search** — SQLite FTS5 across 199 slides + 408 textbook chunks
+Multi-agent RAG system with multimodal retrieval over lecture slides, Dayan & Abbott, and Fundamental Neuroscience.
 
 ## Architecture
 
 ```
-Frontend (React + Vite)  →  Backend (FastAPI)  →  Ollama (local LLM)
+User Query → Router Agent → Specialized Agent (Tutor|Quiz|Exam|Summary|Derive)
                                     ↓
-                           SQLite FTS5 Database
-                           ├── slides (OCR from lecture PDFs)
-                           └── textbook_chunks (Dayan & Abbott)
+                           Hybrid Retriever (RRF fusion)
+                           ├── Nemotron VL multimodal vectors (slides as images)
+                           ├── Nemotron VL text vectors (textbook chunks)
+                           └── FTS5 keyword search
 ```
+
+**Models (all free via OpenRouter):**
+- **Reasoning:** `qwen/qwen3.6-plus-preview:free`
+- **Embedding:** `nvidia/llama-nemotron-embed-vl-1b-v2:free` (2048-dim, image+text)
+
+**Agent Team:**
+- **Router** — classifies intent → dispatches to specialist
+- **Tutor** — Q&A, concept explanation with citations
+- **Derive** — step-by-step math derivations (Nernst, GHK, HH, Cable)
+- **Quiz** — generates MCQ/short answer/derivation problems
+- **Exam** — mock exams with grading and feedback
+- **Summary** — per-lecture review with equations and concept maps
+
+## Data
+
+| Source | Records | Embedding |
+|--------|---------|-----------|
+| Lecture Slides (L2-L6) | 199 | Image (multimodal) |
+| Dayan & Abbott | 408 chunks | Text |
+| Fundamental Neuroscience | 1,585 chunks | Text |
+| **Total** | **2,192** | |
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- [Ollama](https://ollama.ai) installed and running
+- Python 3.10+, Node.js 18+
+- [OpenRouter API key](https://openrouter.ai/keys) (free tier models)
 
-### 1. Setup Ollama
+### 1. Setup
 ```bash
-ollama pull llama3.1:8b   # or any preferred model
-ollama serve              # start the server
+git clone https://github.com/Joonoh991119/bri610-tutor.git
+cd bri610-tutor
+cp .env.example .env
+# Edit .env: add your OPENROUTER_API_KEY
+
+# Download DB from releases
+wget -P data/ https://github.com/Joonoh991119/bri610-tutor/releases/download/v0.1.0/bri610_lectures.db
 ```
 
-### 2. Backend
+### 2. Generate Embeddings (first time only)
+```bash
+cd pipeline
+python embed_all.py --key $OPENROUTER_API_KEY --db ../data/bri610_lectures.db
+```
+
+### 3. Backend
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --port 8000 --reload
 ```
 
-### 3. Frontend
+### 4. Frontend
 ```bash
 cd frontend
-npm install
-npm run dev
+npm install && npm run dev
 ```
 
 Open http://localhost:3000
 
-### 4. (Optional) Build Lecture DB
-If you need to rebuild the database from source PDFs:
-```bash
-cd pipeline
-python build_lecture_db.py    # OCR lecture slides
-python build_textbook_db.py   # Parse Dayan & Abbott
-```
-
 ## Configuration
-
-Environment variables (or `.env`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
-| `OLLAMA_MODEL` | `llama3.1:8b` | Model to use |
+| `OPENROUTER_API_KEY` | (required) | OpenRouter API key |
+| `CHAT_MODEL` | `qwen/qwen3.6-plus-preview:free` | Reasoning model |
+| `EMBED_MODEL` | `nvidia/llama-nemotron-embed-vl-1b-v2:free` | Embedding model |
 | `DATA_DIR` | `../data` | Path to DB + images |
-
-## Data
-
-| Source | Records | Type |
-|--------|---------|------|
-| Lecture Slides (L2-L6) | 199 | OCR-extracted text + images |
-| Dayan & Abbott Textbook | 408 chunks | Chapter/section text |
-
-### Lecture Coverage
-- **L2**: Introduction to Computational Neuroscience (68 slides)
-- **L3**: Neural Membrane Biophysics I (34 slides)
-- **L4**: Neural Membrane Biophysics II (31 slides)
-- **L5**: Action Potential & Hodgkin-Huxley (34 slides)
-- **L6**: Cable Theory & AP Propagation (32 slides)
 
 ## License
 
 For personal educational use only. Lecture materials © Prof. Jeehyun Kwag, SNU.
-Textbook content © Dayan & Abbott, MIT Press.
+Textbook content © respective publishers.
