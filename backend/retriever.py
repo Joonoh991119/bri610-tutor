@@ -51,13 +51,11 @@ class HybridRetriever:
         return self._post_embed({"input": [text[:8000]]})
 
     def embed_image(self, image_path: str, caption: str = "") -> list:
+        """Embed slide image — data:image/jpeg;base64 URL string format"""
         with open(image_path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
-        content = [{"type": "image_url",
-                     "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}]
-        if caption:
-            content.append({"type": "text", "text": caption[:2000]})
-        return self._post_embed({"input": [content]})
+        # OpenRouter accepts base64 data URL as plain string input
+        return self._post_embed({"input": [f"data:image/jpeg;base64,{b64}"]})
 
     # ─── Vector packing ───
 

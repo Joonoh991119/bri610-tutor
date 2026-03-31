@@ -74,17 +74,10 @@ def embed_slides(db_path, api_key, force=False):
         img_file = Path(img_path) if img_path else None
         
         if img_file and img_file.exists():
-            # Multimodal: image + OCR text caption
+            # Image embedding: data URL string (validated format for OpenRouter)
             with open(img_file, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode()
-            input_content = [
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
-            ]
-            # Add OCR text as caption if available
-            if content and len(content) > 30 and not content.startswith("[Visual"):
-                input_content.append({"type": "text", "text": content[:1500]})
-            
-            vec = embed_request(api_key, {"input": [input_content]})
+            vec = embed_request(api_key, {"input": [f"data:image/jpeg;base64,{b64}"]})
         elif content and len(content) > 20:
             # Text-only fallback
             vec = embed_request(api_key, {"input": [content[:4000]]})
