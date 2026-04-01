@@ -14,3 +14,4 @@ data/lecture_images/
 # Test artifacts
 test_pages/
 *.db-journal
+logs/

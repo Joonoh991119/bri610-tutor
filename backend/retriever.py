@@ -1,31 +1,42 @@
 """
-Hybrid Retriever — Nemotron VL Multimodal Embedding + FTS5 with RRF fusion
+Hybrid Retriever v0.3 — PostgreSQL + pgvector + Full-Text Search with RRF Fusion
 
-Embedding strategy:
-- Slides: image embedding via Nemotron VL (preserves equations, diagrams, layout)
-- Textbook chunks: text embedding via Nemotron VL
-- Queries: text embedding
+Retrieval strategy (accuracy-first):
+- Slides: image embedding (Nemotron VL 2048-dim) via pgvector cosine
+- Textbook pages: DUAL retrieval
+  * text_embedding: primary (semantic text search)
+  * image_embedding: supplementary for equation/mixed/figure pages
+  * Final score = max(text_sim, image_sim) per page
+- Full-text search via PostgreSQL tsvector (GIN index)
+- RRF fusion merges vector + FTS results
+
 Model: nvidia/llama-nemotron-embed-vl-1b-v2:free (2048-dim, OpenRouter)
 """
-import sqlite3, struct, math, re, base64, requests, time, logging
+import psycopg2, psycopg2.extras
+from pgvector.psycopg2 import register_vector
+import re, requests, time, logging, os
 from typing import Optional
-from pathlib import Path
 
 log = logging.getLogger(__name__)
+
+DB_DSN = os.environ.get("DATABASE_URL", "dbname=bri610 user=tutor password=tutor610 host=localhost")
 EMBED_DIM = 2048
 
+
 class HybridRetriever:
-    def __init__(self, db_path: str, openrouter_key: str,
-                 embed_model: str = "nvidia/llama-nemotron-embed-vl-1b-v2:free"):
-        self.db_path = db_path
+    def __init__(self, openrouter_key: str,
+                 embed_model: str = "nvidia/llama-nemotron-embed-vl-1b-v2:free",
+                 db_dsn: str = None):
+        self.db_dsn = db_dsn or DB_DSN
         self.api_key = openrouter_key
         self.embed_model = embed_model
         self.embed_url = "https://openrouter.ai/api/v1/embeddings"
         self.dim = EMBED_DIM
 
     def _conn(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+        conn = psycopg2.connect(self.db_dsn)
+        register_vector(conn)
+        conn.cursor().execute("SET statement_timeout = '30s'")
         return conn
 
     # ─── Embedding ───
@@ -38,6 +49,9 @@ class HybridRetriever:
                              "Content-Type": "application/json"},
                     json={"model": self.embed_model, **payload},
                     timeout=60)
+                if r.status_code == 429:
+                    time.sleep(min(30, 2 ** (attempt + 2)))
+                    continue
                 r.raise_for_status()
                 return r.json()["data"][0]["embedding"]
             except (requests.exceptions.RequestException, KeyError) as e:
@@ -50,133 +64,198 @@ class HybridRetriever:
     def embed_text(self, text: str) -> list:
         return self._post_embed({"input": [text[:8000]]})
 
-    def embed_image(self, image_path: str, caption: str = "") -> list:
-        """Embed slide image — data:image/jpeg;base64 URL string format"""
-        with open(image_path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-        # OpenRouter accepts base64 data URL as plain string input
-        return self._post_embed({"input": [f"data:image/jpeg;base64,{b64}"]})
-
-    # ─── Vector packing ───
-
-    @staticmethod
-    def pack_vec(vec: list) -> bytes:
-        return struct.pack(f'{len(vec)}f', *vec)
-
-    @staticmethod
-    def unpack_vec(blob: bytes) -> list:
-        n = len(blob) // 4
-        return list(struct.unpack(f'{n}f', blob))
-
-    @staticmethod
-    def cosine_sim(a, b):
-        dot = sum(x*y for x, y in zip(a, b))
-        na = math.sqrt(sum(x*x for x in a))
-        nb = math.sqrt(sum(x*x for x in b))
-        return dot / (na * nb) if na and nb else 0.0
+    # ─── FTS helper ───
 
     @staticmethod
     def sanitize_fts(query: str) -> str:
+        """Build a safe tsquery string from user input"""
         tokens = query.split()
         safe = []
         for t in tokens:
-            if '-' in t: safe.append(f'"{t}"')
-            elif re.match(r'^[a-zA-Z0-9_]+$', t): safe.append(t)
-            else:
-                c = re.sub(r'[^\w]', '', t)
-                if c: safe.append(c)
-        return ' '.join(safe)
+            c = re.sub(r'[^\w]', '', t)
+            if c and len(c) > 1:
+                safe.append(c)
+        return ' & '.join(safe) if safe else ''
 
-    # ─── Search ───
+    # ─── Vector Search (pgvector brute-force cosine) ───
 
-    def _vector_search(self, query_vec, table, limit=20):
+    def _vector_search_slides(self, query_vec, limit=15):
+        """Cosine similarity search on slides.embedding"""
         conn = self._conn()
-        if table == "slides":
-            rows = conn.execute(
-                "SELECT id, lecture, lecture_title, page_num, content, img_path, topics, embedding "
-                "FROM slides WHERE embedding IS NOT NULL").fetchall()
-        else:
-            rows = conn.execute(
-                "SELECT id, book, chapter, chapter_title, section, section_title, "
-                "page_start, page_end, content, embedding "
-                "FROM textbook_chunks WHERE embedding IS NOT NULL").fetchall()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
+                   1 - (embedding <=> %s::vector) AS similarity
+            FROM slides
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+        """, (query_vec, query_vec, limit))
+        rows = cur.fetchall()
         conn.close()
-        scored = []
-        for r in rows:
-            sim = self.cosine_sim(query_vec, self.unpack_vec(r["embedding"]))
-            scored.append((sim, dict(r)))
-        scored.sort(key=lambda x: -x[0])
-        return scored[:limit]
+        return [(r['similarity'], dict(r)) for r in rows]
 
-    def _fts_slides(self, query, lecture=None, limit=20):
+    def _vector_search_textbook(self, query_vec, limit=15):
+        """
+        Dual-vector search on textbook_pages:
+        - text_embedding <=> query (primary)
+        - image_embedding <=> query (supplementary for visual pages)
+        Score = max(text_sim, image_sim) — ensures no information loss
+        """
         conn = self._conn()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT id, book, page_num, chapter, chapter_title, section_title,
+                   content, page_type, has_equations, has_figures,
+                   CASE WHEN text_embedding IS NOT NULL
+                        THEN 1 - (text_embedding <=> %(vec)s::vector) ELSE 0 END AS text_sim,
+                   CASE WHEN image_embedding IS NOT NULL
+                        THEN 1 - (image_embedding <=> %(vec)s::vector) ELSE 0 END AS img_sim
+            FROM textbook_pages
+            WHERE qc_status = 'passed'
+              AND (text_embedding IS NOT NULL OR image_embedding IS NOT NULL)
+            ORDER BY GREATEST(
+                COALESCE(1 - (text_embedding <=> %(vec)s::vector), 0),
+                COALESCE(1 - (image_embedding <=> %(vec)s::vector), 0)
+            ) DESC
+            LIMIT %(limit)s
+        """, {'vec': query_vec, 'limit': limit})
+        rows = cur.fetchall()
+        conn.close()
+        return [(max(r['text_sim'] or 0, r['img_sim'] or 0), dict(r)) for r in rows]
+
+    # ─── Full-Text Search (PostgreSQL tsvector) ───
+
+    def _fts_slides(self, query, lecture=None, limit=15):
         q = self.sanitize_fts(query)
-        if not q: return []
-        params = [q]
-        sql = ("SELECT s.id, s.lecture, s.lecture_title, s.page_num, s.content, "
-               "s.img_path, s.topics, rank "
-               "FROM slides_fts f JOIN slides s ON f.rowid = s.id WHERE slides_fts MATCH ?")
-        if lecture: sql += " AND s.lecture = ?"; params.append(lecture)
-        sql += " ORDER BY rank LIMIT ?"; params.append(limit)
-        rows = conn.execute(sql, params).fetchall()
-        conn.close()
-        return [(abs(r["rank"]), dict(r)) for r in rows]
-
-    def _fts_textbook(self, query, limit=20):
+        if not q:
+            return []
         conn = self._conn()
-        q = self.sanitize_fts(query)
-        if not q: return []
-        rows = conn.execute(
-            "SELECT t.id, t.book, t.chapter, t.chapter_title, t.section, "
-            "t.section_title, t.page_start, t.page_end, t.content, rank "
-            "FROM textbook_chunks_fts f JOIN textbook_chunks t ON f.rowid=t.id "
-            "WHERE textbook_chunks_fts MATCH ? ORDER BY rank LIMIT ?", (q, limit)
-        ).fetchall()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        sql = """
+            SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
+                   ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,'')),
+                              to_tsquery('english', %s)) AS rank
+            FROM slides
+            WHERE to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,''))
+                  @@ to_tsquery('english', %s)
+        """
+        params = [q, q]
+        if lecture:
+            sql += " AND lecture = %s"
+            params.append(lecture)
+        sql += " ORDER BY rank DESC LIMIT %s"
+        params.append(limit)
+        cur.execute(sql, params)
+        rows = cur.fetchall()
         conn.close()
-        return [(abs(r["rank"]), dict(r)) for r in rows]
+        return [(r['rank'], dict(r)) for r in rows]
+
+    def _fts_textbook(self, query, limit=15):
+        q = self.sanitize_fts(query)
+        if not q:
+            return []
+        conn = self._conn()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT id, book, page_num, chapter, chapter_title, section_title,
+                   content, page_type, has_equations, has_figures,
+                   ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,'')),
+                              to_tsquery('english', %s)) AS rank
+            FROM textbook_pages
+            WHERE qc_status = 'passed'
+              AND to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,''))
+                  @@ to_tsquery('english', %s)
+            ORDER BY rank DESC LIMIT %s
+        """, (q, q, limit))
+        rows = cur.fetchall()
+        conn.close()
+        return [(r['rank'], dict(r)) for r in rows]
+
+    # ─── RRF Fusion ───
 
     def search(self, query: str, lecture: Optional[str] = None,
                limit: int = 8, alpha: float = 0.6):
+        """
+        Hybrid search with Reciprocal Rank Fusion.
+        alpha: weight for vector search (1-alpha for FTS)
+        """
+        # Check if any embeddings exist
         conn = self._conn()
-        has_vec = conn.execute(
-            "SELECT COUNT(*) FROM slides WHERE embedding IS NOT NULL"
-        ).fetchone()[0] > 0
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM slides WHERE embedding IS NOT NULL")
+        has_vec = cur.fetchone()[0] > 0
+        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding IS NOT NULL OR image_embedding IS NOT NULL")
+        has_tb_vec = cur.fetchone()[0] > 0
         conn.close()
 
-        if has_vec:
-            qvec = self.embed_text(query)
-            vs = self._vector_search(qvec, "slides", 15)
-            vb = self._vector_search(qvec, "textbook_chunks", 15)
-        else:
-            vs, vb, alpha = [], [], 0.0
+        # Vector search
+        vs, vb = [], []
+        if has_vec or has_tb_vec:
+            try:
+                qvec = self.embed_text(query)
+                if has_vec:
+                    vs = self._vector_search_slides(qvec, 15)
+                if has_tb_vec:
+                    vb = self._vector_search_textbook(qvec, 15)
+            except Exception as e:
+                log.warning(f"Vector search failed, falling back to FTS: {e}")
+                alpha = 0.0
 
+        if not (has_vec or has_tb_vec):
+            alpha = 0.0
+
+        # FTS search
         fs = self._fts_slides(query, lecture, 15)
         fb = self._fts_textbook(query, 15)
 
+        # RRF merge
         k, rrf = 60, {}
+
         def add(results, w, tbl):
             for rank, (_, doc) in enumerate(results):
                 key = (tbl, doc["id"])
-                if key not in rrf: rrf[key] = {"score": 0, "doc": doc, "table": tbl}
+                if key not in rrf:
+                    rrf[key] = {"score": 0, "doc": doc, "table": tbl}
                 rrf[key]["score"] += w / (k + rank + 1)
 
-        if alpha > 0: add(vs, alpha, "slide"); add(vb, alpha, "textbook")
-        add(fs, 1-alpha, "slide"); add(fb, 1-alpha, "textbook")
+        if alpha > 0:
+            add(vs, alpha, "slide")
+            add(vb, alpha, "textbook")
+        add(fs, 1 - alpha, "slide")
+        add(fb, 1 - alpha, "textbook")
 
         merged = sorted(rrf.values(), key=lambda x: -x["score"])
         results = []
         for item in merged[:limit]:
             doc = item["doc"]
-            doc.pop("embedding", None); doc.pop("rank", None)
+            # Clean up internal fields
+            for k_remove in ('rank', 'similarity', 'text_sim', 'img_sim',
+                             'text_embedding', 'image_embedding', 'embedding'):
+                doc.pop(k_remove, None)
+
             if item["table"] == "slide":
-                results.append({"source":"slide","id":doc["id"],"lecture":doc["lecture"],
-                    "page":doc["page_num"],"title":doc["lecture_title"],
-                    "content":doc["content"][:800],"img":doc.get("img_path",""),
-                    "score":round(item["score"],4)})
+                results.append({
+                    "source": "slide", "id": doc["id"],
+                    "lecture": doc["lecture"], "page": doc["page_num"],
+                    "title": doc.get("lecture_title", ""),
+                    "content": (doc.get("content") or "")[:800],
+                    "img": doc.get("img_path", ""),
+                    "score": round(item["score"], 4),
+                })
             else:
-                results.append({"source":"textbook","id":doc["id"],"book":doc["book"],
-                    "chapter":doc["chapter"],"chapter_title":doc.get("chapter_title",""),
-                    "section":doc.get("section",""),"section_title":doc.get("section_title",""),
-                    "pages":f"{doc.get('page_start','')}-{doc.get('page_end','')}",
-                    "content":doc["content"][:800],"score":round(item["score"],4)})
+                results.append({
+                    "source": "textbook", "id": doc["id"],
+                    "book": doc.get("book", ""),
+                    "chapter": doc.get("chapter", ""),
+                    "chapter_title": doc.get("chapter_title", ""),
+                    "section": "",  # page-level, no section_num
+                    "section_title": doc.get("section_title", ""),
+                    "pages": str(doc.get("page_num", "")),
+                    "content": (doc.get("content") or "")[:800],
+                    "page_type": doc.get("page_type", ""),
+                    "has_equations": doc.get("has_equations", False),
+                    "score": round(item["score"], 4),
+                })
+
         return results

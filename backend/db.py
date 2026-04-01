@@ -1,15 +1,22 @@
-"""DB access layer for BRI610 lecture slides + textbook chunks"""
-import sqlite3
-import re
+"""
+DB access layer v0.3 — PostgreSQL + pgvector
+For BRI610 lecture slides + textbook pages (page-level, not chunk-level)
+"""
+import psycopg2, psycopg2.extras
+from pgvector.psycopg2 import register_vector
+import re, os
 from typing import Optional
 
+DB_DSN = os.environ.get("DATABASE_URL", "dbname=bri610 user=tutor password=tutor610 host=localhost")
+
+
 class DB:
-    def __init__(self, db_path: str):
-        self.db_path = db_path
+    def __init__(self, dsn: str = None):
+        self.dsn = dsn or DB_DSN
 
     def _conn(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+        conn = psycopg2.connect(self.dsn)
+        register_vector(conn)
         return conn
 
     @staticmethod
@@ -17,97 +24,131 @@ class DB:
         tokens = query.split()
         safe = []
         for t in tokens:
-            if '-' in t:
-                safe.append(f'"{t}"')
-            elif re.match(r'^[a-zA-Z0-9_]+$', t):
-                safe.append(t)
-            else:
-                cleaned = re.sub(r'[^\w]', '', t)
-                if cleaned:
-                    safe.append(cleaned)
-        return ' '.join(safe)
+            c = re.sub(r'[^\w]', '', t)
+            if c and len(c) > 1:
+                safe.append(c)
+        return ' & '.join(safe) if safe else ''
 
     def stats(self):
         conn = self._conn()
-        slides = conn.execute("SELECT COUNT(*) FROM slides").fetchone()[0]
-        chunks = conn.execute("SELECT COUNT(*) FROM textbook_chunks").fetchone()[0]
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM slides")
+        slides = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE qc_status='passed'")
+        pages = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM slides WHERE embedding IS NOT NULL")
+        slides_emb = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE qc_status='passed' AND text_embedding IS NOT NULL")
+        pages_emb = cur.fetchone()[0]
         conn.close()
-        return {"slides": slides, "textbook_chunks": chunks, "total": slides + chunks}
+        return {
+            "slides": slides, "textbook_pages": pages,
+            "total": slides + pages,
+            "embedded": slides_emb + pages_emb,
+        }
 
     def list_lectures(self):
         conn = self._conn()
-        lectures = []
-        for r in conn.execute("SELECT lecture, lecture_title, COUNT(*) c FROM slides GROUP BY lecture ORDER BY lecture"):
-            lectures.append({"id": r[0], "title": r[1], "slides": r[2]})
-        books = []
-        for r in conn.execute("SELECT book, chapter, chapter_title, COUNT(*) c FROM textbook_chunks GROUP BY book, chapter ORDER BY book, CAST(chapter AS INTEGER)"):
-            books.append({"book": r[0], "chapter": r[1], "chapter_title": r[2], "chunks": r[3]})
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT lecture AS id, lecture_title AS title, COUNT(*) AS slides
+            FROM slides GROUP BY lecture, lecture_title ORDER BY lecture
+        """)
+        lectures = [dict(r) for r in cur.fetchall()]
+        cur.execute("""
+            SELECT book, chapter, chapter_title, COUNT(*) AS pages
+            FROM textbook_pages
+            WHERE qc_status = 'passed'
+            GROUP BY book, chapter, chapter_title
+            ORDER BY book, CAST(NULLIF(chapter,'') AS INTEGER) NULLS LAST
+        """)
+        books = [dict(r) for r in cur.fetchall()]
         conn.close()
         return {"lectures": lectures, "textbooks": books}
 
     def search_slides(self, query: str, lecture: Optional[str] = None, limit: int = 10):
-        conn = self._conn()
         q = self.sanitize_fts(query)
         if not q:
             return []
-        params = [q]
+        conn = self._conn()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         sql = """
-            SELECT s.id, s.lecture, s.lecture_title, s.page_num, s.content, s.img_path, s.topics, rank
-            FROM slides_fts f JOIN slides s ON f.rowid = s.id
-            WHERE slides_fts MATCH ?
+            SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
+                   ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,'')),
+                              to_tsquery('english', %s)) AS rank
+            FROM slides
+            WHERE to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,''))
+                  @@ to_tsquery('english', %s)
         """
+        params = [q, q]
         if lecture:
-            sql += " AND s.lecture = ?"
+            sql += " AND lecture = %s"
             params.append(lecture)
-        sql += " ORDER BY rank LIMIT ?"
+        sql += " ORDER BY rank DESC LIMIT %s"
         params.append(limit)
-        rows = conn.execute(sql, params).fetchall()
+        cur.execute(sql, params)
+        rows = cur.fetchall()
         conn.close()
-        return [{"source": "slide", "id": r["id"], "lecture": r["lecture"], "page": r["page_num"],
-                 "title": r["lecture_title"], "content": r["content"],
-                 "img": r["img_path"], "topics": r["topics"],
-                 "score": round(r["rank"], 3)} for r in rows]
+        return [{
+            "source": "slide", "id": r["id"], "lecture": r["lecture"],
+            "page": r["page_num"], "title": r["lecture_title"],
+            "content": r["content"], "img": r["img_path"],
+            "topics": r["topics"], "score": round(float(r["rank"]), 3)
+        } for r in rows]
 
     def search_textbook(self, query: str, limit: int = 10):
-        conn = self._conn()
         q = self.sanitize_fts(query)
         if not q:
             return []
-        rows = conn.execute("""
-            SELECT t.id, t.book, t.chapter, t.chapter_title, t.section, t.section_title,
-                   t.page_start, t.page_end, t.content, rank
-            FROM textbook_chunks_fts f JOIN textbook_chunks t ON f.rowid = t.id
-            WHERE textbook_chunks_fts MATCH ?
-            ORDER BY rank LIMIT ?
-        """, (q, limit)).fetchall()
+        conn = self._conn()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT id, book, page_num, chapter, chapter_title, section_title, content,
+                   page_type, has_equations,
+                   ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,'')),
+                              to_tsquery('english', %s)) AS rank
+            FROM textbook_pages
+            WHERE qc_status = 'passed'
+              AND to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,''))
+                  @@ to_tsquery('english', %s)
+            ORDER BY rank DESC LIMIT %s
+        """, (q, q, limit))
+        rows = cur.fetchall()
         conn.close()
-        return [{"source": "textbook", "id": r["id"], "book": r["book"],
-                 "chapter": r["chapter"], "chapter_title": r["chapter_title"],
-                 "section": r["section"], "section_title": r["section_title"],
-                 "pages": f"{r['page_start']}-{r['page_end']}",
-                 "content": r["content"], "score": round(r["rank"], 3)} for r in rows]
+        return [{
+            "source": "textbook", "id": r["id"], "book": r["book"],
+            "chapter": r["chapter"], "chapter_title": r["chapter_title"],
+            "section": "", "section_title": r["section_title"],
+            "pages": str(r["page_num"]),
+            "content": r["content"], "score": round(float(r["rank"]), 3)
+        } for r in rows]
 
     def search_all(self, query: str, lecture: Optional[str] = None, limit: int = 10):
         s = self.search_slides(query, lecture, limit)
         t = self.search_textbook(query, limit)
         merged = s + t
-        merged.sort(key=lambda x: x["score"])
+        merged.sort(key=lambda x: -x["score"])
         return merged[:limit]
 
     def get_slide(self, lecture: str, page: int):
         conn = self._conn()
-        row = conn.execute("SELECT * FROM slides WHERE lecture=? AND page_num=?", (lecture, page)).fetchone()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT * FROM slides WHERE lecture=%s AND page_num=%s", (lecture, page))
+        row = cur.fetchone()
         conn.close()
         if row:
             d = dict(row)
+            d.pop('embedding', None)
             return d
         return None
 
     def get_slides_range(self, lecture: str, start: int, end: int):
         conn = self._conn()
-        rows = conn.execute(
-            "SELECT * FROM slides WHERE lecture=? AND page_num BETWEEN ? AND ? ORDER BY page_num",
-            (lecture, start, end)
-        ).fetchall()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT id, lecture, lecture_title, page_num, content, img_path, topics
+            FROM slides WHERE lecture=%s AND page_num BETWEEN %s AND %s ORDER BY page_num
+        """, (lecture, start, end))
+        rows = [dict(r) for r in cur.fetchall()]
         conn.close()
-        return [dict(r) for r in rows]
+        return rows

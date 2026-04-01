@@ -58,24 +58,23 @@ sudo -u postgres psql -d bri610 -c "GRANT ALL ON SCHEMA public TO tutor;"
 psql -d bri610 -U tutor -f pipeline/schema.sql
 ```
 
-### 2. Pipeline: Parse → QC → Embed
+### 2. Pipeline: Parse → QC → Embed → Verify
 ```bash
 cd pipeline
 export OPENROUTER_API_KEY=sk-or-v1-...
 
-# Parse textbooks into pages
+# RECOMMENDED: Full auto-pipeline with QC gates
+python pipeline_harness.py run --key $OPENROUTER_API_KEY --batch 50
+
+# OR run individual stages:
 python pipeline_harness.py parse --book DA
-python pipeline_harness.py parse --book FN
-
-# Run QC checks
 python pipeline_harness.py qc --fix
-
-# Embed (batch, repeat until done)
 python pipeline_harness.py embed --key $OPENROUTER_API_KEY --batch 50
-
-# Check progress
+python pipeline_harness.py verify
 python pipeline_harness.py status
 ```
+
+See [AGENT.md](AGENT.md) for full workflow documentation.
 
 ### 3. Backend
 ```bash
