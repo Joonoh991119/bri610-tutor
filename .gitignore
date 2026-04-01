@@ -5,7 +5,12 @@ __pycache__/
 *.pyc
 .vite/
 
-# Large data files - track with git-lfs or keep local
+# Large binary data — use git-lfs or download separately
 data/bri610_lectures.db
+data/textbook_images/
 data/lecture_images/
 *.pdf
+
+# Test artifacts
+test_pages/
+*.db-journal
