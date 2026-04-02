@@ -15,7 +15,7 @@ from agents import AgentTeam
 from db import DB
 
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "data"))
-IMG_DIR = os.path.join(DATA_DIR, "lecture_images")
+IMG_DIR = os.environ.get("IMG_DIR", DATA_DIR)  # slide images live in data/L2/, data/L3/, etc.
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 CHAT_MODEL = os.environ.get("CHAT_MODEL", "qwen/qwen3.6-plus-preview:free")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "nvidia/llama-nemotron-embed-vl-1b-v2:free")
@@ -73,9 +73,9 @@ def list_lectures():
 
 @app.get("/api/slide-image/{lecture}/{page}")
 def get_slide_image(lecture: str, page: int):
-    path = os.path.join(IMG_DIR, lecture, f"p{page:02d}.jpg")
+    path = os.path.join(DATA_DIR, lecture, f"p{page:02d}.jpg")
     if not os.path.isfile(path):
-        raise HTTPException(404)
+        raise HTTPException(404, detail=f"Slide image not found: {lecture}/p{page:02d}.jpg")
     return FileResponse(path, media_type="image/jpeg")
 
 @app.post("/api/search")
