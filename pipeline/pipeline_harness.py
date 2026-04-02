@@ -275,7 +275,7 @@ def stage_parse(book=None, **kwargs) -> StageResult:
                '/mnt/user-data/uploads/Theoretical_Neuroscience_Computational_and_Mathematical_Modeling_of_Neural_Systems_-__Peter_Dayan__L__F__Abbott__1_.pdf',
                os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'textbook_images', 'DA')),
         'FN': ('Fundamental_Neuroscience',
-               os.path.expanduser('~/fundamental_neuroscience.pdf'),
+               os.path.expanduser('~/Zotero/storage/SXYKE54W/2008 - Fundamental neuroscience.pdf'),
                os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'textbook_images', 'FN')),
     }
     targets = [book] if book else ['DA', 'FN']
