@@ -19,6 +19,7 @@ async function get(path) {
 export const api = {
   health: () => get('/health'),
   lectures: () => get('/lectures'),
+  dbStats: () => get('/db-stats'),
   search: (query, lecture = null, limit = 8) =>
     post('/search', { query, lecture, limit }),
   chat: (message, lecture = null, mode = 'auto', history = []) =>
@@ -31,5 +32,9 @@ export const api = {
     post('/summary', { lecture, focus }),
   grade: (question, answer, lecture = null) =>
     post('/grade', { question, answer, lecture }),
+  cachedSummary: (lecture) => get(`/summaries/${lecture}`),
+  generateSummary: (lecture) => post(`/summaries/${lecture}/generate`, {}),
+  submitFeedback: (lecture, feedback) =>
+    post(`/summaries/${lecture}/feedback`, { feedback }),
   slideImage: (lecture, page) => `/images/${lecture}/p${String(page).padStart(2, '0')}.jpg`,
 };

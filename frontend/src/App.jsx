@@ -7,6 +7,7 @@ import QuizPanel from './components/QuizPanel'
 import SummaryPanel from './components/SummaryPanel'
 import SlideViewer from './components/SlideViewer'
 import ExamPanel from './components/ExamPanel'
+import DBStatusPanel from './components/DBStatusPanel'
 
 const TABS = [
   { id: 'chat', label: 'Tutor', icon: MessageCircle },
@@ -53,14 +54,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${status?.status === 'ok' ? 'bg-success' : 'bg-error'}`} />
-          <span className="text-[11px] text-text-dim">
-            {status?.status === 'ok'
-              ? `${status.chat_model?.split('/')[1]?.split(':')[0] || '?'} · ${status.db?.total} docs · ${status.db?.embedded || 0} embedded`
-              : 'Backend offline'}
-          </span>
-        </div>
+        <DBStatusPanel status={status} />
       </header>
 
       <main className="flex-1 overflow-hidden">

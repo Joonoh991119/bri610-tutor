@@ -4,7 +4,7 @@ For BRI610 lecture slides + textbook pages (page-level, not chunk-level)
 """
 import psycopg2, psycopg2.extras
 from pgvector.psycopg2 import register_vector
-import re, os
+import re, os, json
 from typing import Optional
 
 DB_DSN = os.environ.get("DATABASE_URL", "dbname=bri610 user=tutor password=tutor610 host=localhost")
@@ -46,6 +46,26 @@ class DB:
             "total": slides + pages,
             "embedded": slides_emb + pages_emb,
         }
+
+    def detailed_stats(self):
+        conn = self._conn()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT lecture, lecture_title,
+                   COUNT(*) AS total, COUNT(embedding) AS embedded
+            FROM slides GROUP BY lecture, lecture_title ORDER BY lecture
+        """)
+        slides = [dict(r) for r in cur.fetchall()]
+        cur.execute("""
+            SELECT book,
+                   COUNT(*) FILTER (WHERE qc_status='passed') AS total,
+                   COUNT(text_embedding) FILTER (WHERE qc_status='passed') AS text_emb,
+                   COUNT(image_embedding) FILTER (WHERE qc_status='passed') AS img_emb
+            FROM textbook_pages GROUP BY book ORDER BY book
+        """)
+        books = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return {"slides": slides, "textbooks": books}
 
     def list_lectures(self):
         conn = self._conn()
@@ -129,6 +149,42 @@ class DB:
         merged = s + t
         merged.sort(key=lambda x: -x["score"])
         return merged[:limit]
+
+    def get_summary(self, lecture: str):
+        conn = self._conn()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT * FROM lecture_summaries WHERE lecture = %s", (lecture,))
+        row = cur.fetchone()
+        conn.close()
+        if row:
+            d = dict(row)
+            d['generated_at'] = d['generated_at'].isoformat() if d['generated_at'] else None
+            d['feedback_at'] = d['feedback_at'].isoformat() if d['feedback_at'] else None
+            return d
+        return None
+
+    def upsert_summary(self, lecture, title, summary, sources):
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO lecture_summaries (lecture, lecture_title, summary, sources, generated_at)
+            VALUES (%s, %s, %s, %s, now())
+            ON CONFLICT (lecture) DO UPDATE SET
+                summary = EXCLUDED.summary, sources = EXCLUDED.sources,
+                generated_at = now(), lecture_title = EXCLUDED.lecture_title
+        """, (lecture, title, summary, json.dumps(sources)))
+        conn.commit()
+        conn.close()
+
+    def save_feedback(self, lecture, feedback):
+        conn = self._conn()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE lecture_summaries SET feedback = %s, feedback_at = now()
+            WHERE lecture = %s
+        """, (feedback, lecture))
+        conn.commit()
+        conn.close()
 
     def get_slide(self, lecture: str, page: int):
         conn = self._conn()

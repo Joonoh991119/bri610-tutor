@@ -1,49 +1,91 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader2, Image as ImageIcon, X } from 'lucide-react'
+import { Send, Search, Layers, Brain, Sparkles, X } from 'lucide-react'
 import { api } from '../api'
 import Markdown from './Markdown'
+
+const STAGES = [
+  { text: "Embedding query...", icon: Sparkles },
+  { text: "Searching slides & textbooks...", icon: Search, delay: 2000 },
+  { text: "Ranking results (RRF)...", icon: Layers, delay: 5000 },
+  { text: "Generating answer...", icon: Brain, delay: 7000 },
+]
+
+function LoadingIndicator({ stage, elapsed }) {
+  const StageIcon = STAGES[stage]?.icon || Sparkles
+  return (
+    <div className="flex items-center gap-3 text-sm text-text-dim py-2">
+      <div className="flex gap-1">
+        {STAGES.map((_, i) => (
+          <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+            i <= stage ? 'bg-accent' : 'bg-border'
+          }`} />
+        ))}
+      </div>
+      <StageIcon size={14} className="text-accent animate-pulse" />
+      <span>{STAGES[stage]?.text}</span>
+      <span className="text-[10px] text-text-dim/50 ml-auto">{elapsed}s</span>
+    </div>
+  )
+}
 
 export default function ChatPanel({ lectures }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loadingStage, setLoadingStage] = useState(null)
+  const [elapsed, setElapsed] = useState(0)
   const [lecture, setLecture] = useState(null)
-  const [mode, setMode] = useState('tutor')
+  const [mode, setMode] = useState('auto')
   const [slidePreview, setSlidePreview] = useState(null)
   const endRef = useRef(null)
+  const timersRef = useRef([])
+  const elapsedRef = useRef(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, loadingStage])
+
+  const clearTimers = () => {
+    timersRef.current.forEach(clearTimeout)
+    timersRef.current = []
+    if (elapsedRef.current) clearInterval(elapsedRef.current)
+    elapsedRef.current = null
+  }
 
   const send = async () => {
-    if (!input.trim() || loading) return
+    if (!input.trim() || loadingStage !== null) return
     const msg = input.trim()
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: msg }])
-    setLoading(true)
+
+    // Start loading stages
+    setLoadingStage(0)
+    setElapsed(0)
+    elapsedRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
+    STAGES.forEach((s, i) => {
+      if (i > 0 && s.delay) {
+        timersRef.current.push(setTimeout(() => setLoadingStage(i), s.delay))
+      }
+    })
 
     try {
       const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }))
       const res = await api.chat(msg, lecture, mode, history)
       setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: res.answer,
-        sources: res.sources,
-        agent: res.agent,
+        role: 'assistant', content: res.answer,
+        sources: res.sources, agent: res.agent,
       }])
     } catch (e) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `⚠️ Error: ${e.message}\n\nMake sure the backend is running:\n\`cd backend && uvicorn main:app --port 8000\``,
+        content: `⚠️ Error: ${e.message}`,
       }])
     }
-    setLoading(false)
+    clearTimers()
+    setLoadingStage(null)
   }
 
   return (
     <div className="h-full flex flex-col">
-      {/* Controls bar */}
       <div className="flex items-center gap-3 px-4 py-2 bg-surface-2 border-b border-border text-xs">
         <select
           value={lecture || ''}
@@ -70,7 +112,6 @@ export default function ChatPanel({ lectures }) {
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center mt-20 text-text-dim">
@@ -78,7 +119,6 @@ export default function ChatPanel({ lectures }) {
             <h2 className="text-lg font-semibold text-text-bright mb-2">BRI610 AI Tutor</h2>
             <p className="text-sm max-w-md mx-auto">
               Ask about membrane biophysics, Hodgkin-Huxley model, cable theory, or any lecture topic.
-              I'll search both lecture slides and Dayan & Abbott textbook.
             </p>
             <div className="flex flex-wrap justify-center gap-2 mt-6">
               {[
@@ -89,7 +129,7 @@ export default function ChatPanel({ lectures }) {
               ].map(q => (
                 <button
                   key={q}
-                  onClick={() => { setInput(q); }}
+                  onClick={() => setInput(q)}
                   className="px-3 py-1.5 rounded-full bg-surface-2 border border-border text-xs text-text-dim hover:text-accent hover:border-accent/30 transition-colors"
                 >
                   {q}
@@ -141,16 +181,12 @@ export default function ChatPanel({ lectures }) {
           </div>
         ))}
 
-        {loading && (
-          <div className="flex items-center gap-2 text-text-dim text-sm">
-            <Loader2 size={14} className="animate-spin" />
-            Thinking...
-          </div>
+        {loadingStage !== null && (
+          <LoadingIndicator stage={loadingStage} elapsed={elapsed} />
         )}
         <div ref={endRef} />
       </div>
 
-      {/* Slide preview overlay */}
       {slidePreview && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-8" onClick={() => setSlidePreview(null)}>
           <div className="relative max-w-4xl max-h-full" onClick={e => e.stopPropagation()}>
@@ -167,7 +203,6 @@ export default function ChatPanel({ lectures }) {
         </div>
       )}
 
-      {/* Input */}
       <div className="border-t border-border bg-surface px-4 py-3">
         <div className="flex gap-2 max-w-4xl mx-auto">
           <input
@@ -179,7 +214,7 @@ export default function ChatPanel({ lectures }) {
           />
           <button
             onClick={send}
-            disabled={loading || !input.trim()}
+            disabled={loadingStage !== null || !input.trim()}
             className="px-4 py-2.5 bg-accent text-bg rounded-lg font-medium text-sm hover:bg-accent-dim disabled:opacity-30 transition-colors"
           >
             <Send size={16} />

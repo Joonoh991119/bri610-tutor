@@ -16,6 +16,7 @@ from db import DB
 
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "data"))
 IMG_DIR = os.environ.get("IMG_DIR", DATA_DIR)  # slide images live in data/L2/, data/L3/, etc.
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 CHAT_MODEL = os.environ.get("CHAT_MODEL", "qwen/qwen3.6-plus-preview:free")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "nvidia/llama-nemotron-embed-vl-1b-v2:free")
@@ -52,6 +53,9 @@ class SummaryReq(BaseModel):
 class GradeReq(BaseModel):
     question: str; answer: str; lecture: Optional[str] = None
 
+class FeedbackReq(BaseModel):
+    feedback: str
+
 # ─── Endpoints ───
 
 @app.get("/api/health")
@@ -66,6 +70,10 @@ def health():
         "db": stats,
         "retrieval": "hybrid_rrf",
     }
+
+@app.get("/api/db-stats")
+def db_stats():
+    return db.detailed_stats()
 
 @app.get("/api/lectures")
 def list_lectures():
@@ -101,3 +109,37 @@ async def summary(req: SummaryReq):
 @app.post("/api/grade")
 async def grade(req: GradeReq):
     return await team.grade_answer(req.question, req.answer, req.lecture)
+
+# ─── Cached Summaries ───
+
+@app.get("/api/summaries/{lecture}")
+def get_cached_summary(lecture: str):
+    row = db.get_summary(lecture)
+    if not row:
+        raise HTTPException(404, detail=f"No cached summary for {lecture}")
+    return row
+
+@app.post("/api/summaries/{lecture}/generate")
+async def generate_and_cache_summary(lecture: str):
+    result = await team.generate_summary(lecture)
+    lectures_data = db.list_lectures()
+    title = next((l["title"] for l in lectures_data["lectures"] if l["id"] == lecture), "")
+    db.upsert_summary(lecture, title, result["summary"], result.get("sources", []))
+    return db.get_summary(lecture)
+
+@app.post("/api/summaries/{lecture}/feedback")
+def submit_feedback(lecture: str, req: FeedbackReq):
+    db.save_feedback(lecture, req.feedback)
+    return {"status": "ok"}
+
+# ─── Frontend (production build) ───
+
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="frontend-assets")
+
+    @app.get("/{path:path}")
+    def serve_frontend(path: str):
+        file = os.path.join(FRONTEND_DIR, path)
+        if os.path.isfile(file):
+            return FileResponse(file)
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
