@@ -272,7 +272,7 @@ def stage_parse(book=None, **kwargs) -> StageResult:
     """STAGE 1: Parse textbooks into PostgreSQL"""
     book_map = {
         'DA': ('Dayan_Abbott',
-               '/mnt/user-data/uploads/Theoretical_Neuroscience_Computational_and_Mathematical_Modeling_of_Neural_Systems_-__Peter_Dayan__L__F__Abbott__1_.pdf',
+               os.path.expanduser('~/Downloads/Theoretical Neuroscience Computational and Mathematical Modeling of Neural Systems -  Peter Dayan, L. F. Abbott.pdf'),
                os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'textbook_images', 'DA')),
         'FN': ('Fundamental_Neuroscience',
                os.path.expanduser('~/Zotero/storage/SXYKE54W/2008 - Fundamental neuroscience.pdf'),
