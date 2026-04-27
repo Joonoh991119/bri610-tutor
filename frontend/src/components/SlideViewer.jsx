@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '../api'
 
-const LECTURE_PAGES = { L2: 68, L3: 34, L4: 31, L5: 34, L6: 32 }
-
 export default function SlideViewer({ lectures }) {
-  const [lecture, setLecture] = useState('L3')
+  const lectureList = lectures?.lectures ?? []
+  const firstLecture = lectureList[0]?.id ?? 'L3'
+  const [lecture, setLecture] = useState(firstLecture)
   const [page, setPage] = useState(1)
-  const maxPage = LECTURE_PAGES[lecture] || 1
+  const pageMap = useMemo(() => {
+    const m = {}
+    for (const l of lectureList) m[l.id] = l.slides ?? 1
+    return m
+  }, [lectureList])
+  const maxPage = pageMap[lecture] || 1
 
   const go = (delta) => {
     const next = page + delta

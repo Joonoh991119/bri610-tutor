@@ -86,7 +86,7 @@ export default function ExamPanel({ lectures }) {
                 <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border ${
                   s.type === 'slide' ? 'border-slide/30 text-slide bg-slide/5' : 'border-book/30 text-book bg-book/5'
                 }`}>
-                  {s.type === 'slide' ? `📑 ${s.lecture} p.${s.page}` : `📖 Ch.${s.chapter}`}
+                  {s.type === 'slide' ? `Slide ${s.lecture} p.${s.page}` : `Ch.${s.chapter}`}
                 </span>
               ))}
             </div>

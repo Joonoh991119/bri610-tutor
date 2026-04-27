@@ -61,7 +61,7 @@ export default function SearchPanel({ lectures }) {
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                   r.source === 'slide' ? 'bg-slide/10 text-slide' : 'bg-book/10 text-book'
                 }`}>
-                  {r.source === 'slide' ? `📑 ${r.lecture} p${r.page}` : `📖 Ch.${r.chapter}`}
+                  {r.source === 'slide' ? `Slide ${r.lecture} p.${r.page}` : `Ch.${r.chapter}`}
                 </span>
                 <span className="text-[10px] text-text-dim">score: {r.score}</span>
               </div>

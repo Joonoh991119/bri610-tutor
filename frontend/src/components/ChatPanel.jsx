@@ -106,7 +106,7 @@ export default function ChatPanel({ lectures }) {
                 mode === m ? 'bg-accent/20 text-accent' : 'text-text-dim hover:bg-surface'
               }`}
             >
-              {m === 'auto' ? '🤖 Auto' : m === 'tutor' ? '💬 Tutor' : m === 'derive' ? '📐 Derive' : '📝 Exam'}
+              {m === 'auto' ? 'Auto' : m === 'tutor' ? 'Tutor' : m === 'derive' ? 'Derive' : 'Exam'}
             </button>
           ))}
         </div>
@@ -115,8 +115,14 @@ export default function ChatPanel({ lectures }) {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center mt-20 text-text-dim">
-            <div className="text-4xl mb-4">🧠</div>
-            <h2 className="text-lg font-semibold text-text-bright mb-2">BRI610 AI Tutor</h2>
+            <h2 className="text-2xl font-semibold mb-2"
+                style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-text-bright)' }}>
+              BRI610 AI Tutor
+            </h2>
+            <p className="text-xs uppercase tracking-[0.18em] mb-4"
+               style={{ color: 'var(--color-text-faint)' }}>
+              Computational Neuroscience · SNU BCS
+            </p>
             <p className="text-sm max-w-md mx-auto">
               Ask about membrane biophysics, Hodgkin-Huxley model, cable theory, or any lecture topic.
             </p>
@@ -151,8 +157,13 @@ export default function ChatPanel({ lectures }) {
               ) : (
                 <>
                   {m.agent && (
-                    <span className="inline-block text-[10px] px-2 py-0.5 rounded bg-surface-2 text-text-dim mb-1">
-                      🤖 {m.agent}
+                    <span className="inline-block text-[10px] px-2 py-0.5 rounded uppercase tracking-wider mb-1"
+                          style={{
+                            background: 'var(--color-accent-soft)',
+                            color: 'var(--color-accent)',
+                            fontWeight: 600, letterSpacing: '0.12em',
+                          }}>
+                      {m.agent}
                     </span>
                   )}
                   <div className="markdown-body text-sm">
@@ -170,7 +181,7 @@ export default function ChatPanel({ lectures }) {
                               : 'border-book/30 text-book bg-book/5'
                           }`}
                         >
-                          {s.type === 'slide' ? `📑 ${s.lecture} p.${s.page}` : `📖 Ch.${s.chapter} §${s.section}`}
+                          {s.type === 'slide' ? `Slide ${s.lecture} p.${s.page}` : `Ch.${s.chapter} §${s.section}`}
                         </button>
                       ))}
                     </div>

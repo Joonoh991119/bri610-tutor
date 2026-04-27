@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """
-BRI610 Unified Search Harness — Slides + Textbooks
-Usage:
-  python3 search_lectures.py "query" [-n 8] [-l L3] [--source slides|textbook|all]
-  python3 search_lectures.py --slide L3:15
-  python3 search_lectures.py --list
-"""
-import sqlite3, argparse, json, re, sys
+[DEPRECATED v0.5] BRI610 Unified Search Harness — SQLite-era CLI.
 
-DB_PATH = "/home/claude/bri610_lectures.db"
+This script targets the legacy SQLite database (`slides_fts`, `textbook_chunks_fts`)
+that v0.3+ replaced with PostgreSQL + pgvector. The active retrieval path is
+`backend/retriever.py::HybridRetriever`. Keeping this file purely for ad-hoc
+inspection of an old SQLite snapshot.
+
+Set BRI610_LEGACY_DB to point at a SQLite snapshot if you need to use this tool.
+"""
+import sqlite3, argparse, json, re, sys, os
+
+DB_PATH = os.environ.get(
+    "BRI610_LEGACY_DB",
+    os.path.join(os.path.dirname(__file__), "..", "data", "bri610_lectures.db"),
+)
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)

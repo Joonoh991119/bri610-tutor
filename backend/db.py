@@ -1,23 +1,28 @@
 """
 DB access layer v0.3 — PostgreSQL + pgvector
 For BRI610 lecture slides + textbook pages (page-level, not chunk-level)
+
+v0.5: connections are now borrowed from a shared ThreadedConnectionPool
+(see backend/db_pool.py) instead of opened per call.
 """
 import psycopg2, psycopg2.extras
-from pgvector.psycopg2 import register_vector
 import re, os, json
 from typing import Optional
 
-DB_DSN = os.environ.get("DATABASE_URL", "dbname=bri610 user=tutor password=tutor610 host=localhost")
+from db_pool import acquire as _pool_acquire, release as _pool_release, DB_DSN
 
 
 class DB:
     def __init__(self, dsn: str = None):
+        # dsn arg retained for back-compat; pool reads DATABASE_URL env at process start
         self.dsn = dsn or DB_DSN
 
     def _conn(self):
-        conn = psycopg2.connect(self.dsn)
-        register_vector(conn)
-        return conn
+        return _pool_acquire()
+
+    @staticmethod
+    def _close(conn):
+        _pool_release(conn)
 
     @staticmethod
     def sanitize_fts(query: str) -> str:
@@ -40,7 +45,7 @@ class DB:
         slides_emb = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE qc_status='passed' AND text_embedding IS NOT NULL")
         pages_emb = cur.fetchone()[0]
-        conn.close()
+        self._close(conn)
         return {
             "slides": slides, "textbook_pages": pages,
             "total": slides + pages,
@@ -64,7 +69,7 @@ class DB:
             FROM textbook_pages GROUP BY book ORDER BY book
         """)
         books = [dict(r) for r in cur.fetchall()]
-        conn.close()
+        self._close(conn)
         return {"slides": slides, "textbooks": books}
 
     def list_lectures(self):
@@ -83,7 +88,7 @@ class DB:
             ORDER BY book, CAST(NULLIF(chapter,'') AS INTEGER) NULLS LAST
         """)
         books = [dict(r) for r in cur.fetchall()]
-        conn.close()
+        self._close(conn)
         return {"lectures": lectures, "textbooks": books}
 
     def search_slides(self, query: str, lecture: Optional[str] = None, limit: int = 10):
@@ -108,7 +113,7 @@ class DB:
         params.append(limit)
         cur.execute(sql, params)
         rows = cur.fetchall()
-        conn.close()
+        self._close(conn)
         return [{
             "source": "slide", "id": r["id"], "lecture": r["lecture"],
             "page": r["page_num"], "title": r["lecture_title"],
@@ -134,7 +139,7 @@ class DB:
             ORDER BY rank DESC LIMIT %s
         """, (q, q, limit))
         rows = cur.fetchall()
-        conn.close()
+        self._close(conn)
         return [{
             "source": "textbook", "id": r["id"], "book": r["book"],
             "chapter": r["chapter"], "chapter_title": r["chapter_title"],
@@ -155,7 +160,7 @@ class DB:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("SELECT * FROM lecture_summaries WHERE lecture = %s", (lecture,))
         row = cur.fetchone()
-        conn.close()
+        self._close(conn)
         if row:
             d = dict(row)
             d['generated_at'] = d['generated_at'].isoformat() if d['generated_at'] else None
@@ -174,7 +179,7 @@ class DB:
                 generated_at = now(), lecture_title = EXCLUDED.lecture_title
         """, (lecture, title, summary, json.dumps(sources)))
         conn.commit()
-        conn.close()
+        self._close(conn)
 
     def save_feedback(self, lecture, feedback):
         conn = self._conn()
@@ -184,14 +189,14 @@ class DB:
             WHERE lecture = %s
         """, (feedback, lecture))
         conn.commit()
-        conn.close()
+        self._close(conn)
 
     def get_slide(self, lecture: str, page: int):
         conn = self._conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("SELECT * FROM slides WHERE lecture=%s AND page_num=%s", (lecture, page))
         row = cur.fetchone()
-        conn.close()
+        self._close(conn)
         if row:
             d = dict(row)
             d.pop('embedding', None)
@@ -206,5 +211,5 @@ class DB:
             FROM slides WHERE lecture=%s AND page_num BETWEEN %s AND %s ORDER BY page_num
         """, (lecture, start, end))
         rows = [dict(r) for r in cur.fetchall()]
-        conn.close()
+        self._close(conn)
         return rows

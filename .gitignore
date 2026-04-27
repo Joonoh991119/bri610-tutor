@@ -15,3 +15,21 @@ data/lecture_images/
 test_pages/
 *.db-journal
 logs/
+
+# Figure backup snapshots (local only)
+frontend/public/figures/_matplotlib_backup_*/
+frontend/public/figures/_pretol_backup_*/
+frontend/public/figures/_claude_design_README.md
+
+# Coherence/audit JSON logs (not for repo)
+logs/audit_*.json
+logs/coherence_*.json
+logs/deepseek_review_*.json
+logs/vlm_review_*.json
+logs/summary_*.json
+logs/vlm_pngs/
+
+# OS / temp
+.DS_Store
+*.pyc
+__pycache__/

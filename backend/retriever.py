@@ -11,15 +11,17 @@ Retrieval strategy (accuracy-first):
 - RRF fusion merges vector + FTS results
 
 Model: nvidia/llama-nemotron-embed-vl-1b-v2:free (2048-dim, OpenRouter)
+
+v0.5: connections borrowed from shared db_pool (ThreadedConnectionPool).
 """
 import psycopg2, psycopg2.extras
-from pgvector.psycopg2 import register_vector
 import re, requests, time, logging, os
 from typing import Optional
 
+from db_pool import acquire as _pool_acquire, release as _pool_release, DB_DSN
+
 log = logging.getLogger(__name__)
 
-DB_DSN = os.environ.get("DATABASE_URL", "dbname=bri610 user=tutor password=tutor610 host=localhost")
 EMBED_DIM = 2048
 
 
@@ -34,10 +36,15 @@ class HybridRetriever:
         self.dim = EMBED_DIM
 
     def _conn(self):
-        conn = psycopg2.connect(self.db_dsn)
-        register_vector(conn)
-        conn.cursor().execute("SET statement_timeout = '30s'")
+        conn = _pool_acquire()
+        # Per-conn statement timeout (cheap; idempotent across borrows)
+        with conn.cursor() as c:
+            c.execute("SET statement_timeout = '30s'")
         return conn
+
+    @staticmethod
+    def _close(conn):
+        _pool_release(conn)
 
     # ─── Embedding ───
 
@@ -67,32 +74,42 @@ class HybridRetriever:
     # ─── FTS helper ───
 
     @staticmethod
-    def sanitize_fts(query: str) -> str:
-        """Build a safe tsquery string from user input"""
+    def sanitize_fts(query: str, op: str = "&") -> str:
+        """Build a safe tsquery string. op='&' = AND (strict), op='|' = OR (lenient)."""
         tokens = query.split()
         safe = []
         for t in tokens:
             c = re.sub(r'[^\w]', '', t)
             if c and len(c) > 1:
                 safe.append(c)
-        return ' & '.join(safe) if safe else ''
+        return f' {op} '.join(safe) if safe else ''
 
     # ─── Vector Search (pgvector brute-force cosine) ───
 
-    def _vector_search_slides(self, query_vec, limit=15):
-        """Cosine similarity search on slides.embedding"""
+    def _vector_search_slides(self, query_vec, lecture=None, limit=15):
+        """Cosine similarity search on slides.embedding. Honors lecture filter."""
         conn = self._conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("""
-            SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
-                   1 - (embedding <=> %s::vector) AS similarity
-            FROM slides
-            WHERE embedding IS NOT NULL
-            ORDER BY embedding <=> %s::vector
-            LIMIT %s
-        """, (query_vec, query_vec, limit))
+        if lecture:
+            cur.execute("""
+                SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
+                       1 - (embedding <=> %s::vector) AS similarity
+                FROM slides
+                WHERE embedding IS NOT NULL AND lecture = %s
+                ORDER BY embedding <=> %s::vector
+                LIMIT %s
+            """, (query_vec, lecture, query_vec, limit))
+        else:
+            cur.execute("""
+                SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
+                       1 - (embedding <=> %s::vector) AS similarity
+                FROM slides
+                WHERE embedding IS NOT NULL
+                ORDER BY embedding <=> %s::vector
+                LIMIT %s
+            """, (query_vec, query_vec, limit))
         rows = cur.fetchall()
-        conn.close()
+        self._close(conn)
         return [(r['similarity'], dict(r)) for r in rows]
 
     def _vector_search_textbook(self, query_vec, limit=15):
@@ -121,65 +138,76 @@ class HybridRetriever:
             LIMIT %(limit)s
         """, {'vec': query_vec, 'limit': limit})
         rows = cur.fetchall()
-        conn.close()
+        self._close(conn)
         return [(max(r['text_sim'] or 0, r['img_sim'] or 0), dict(r)) for r in rows]
 
     # ─── Full-Text Search (PostgreSQL tsvector) ───
 
     def _fts_slides(self, query, lecture=None, limit=15):
-        q = self.sanitize_fts(query)
-        if not q:
-            return []
-        conn = self._conn()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        sql = """
-            SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
-                   ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,'')),
-                              to_tsquery('english', %s)) AS rank
-            FROM slides
-            WHERE to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,''))
-                  @@ to_tsquery('english', %s)
-        """
-        params = [q, q]
-        if lecture:
-            sql += " AND lecture = %s"
-            params.append(lecture)
-        sql += " ORDER BY rank DESC LIMIT %s"
-        params.append(limit)
-        cur.execute(sql, params)
-        rows = cur.fetchall()
-        conn.close()
-        return [(r['rank'], dict(r)) for r in rows]
+        # Strict AND first; if 0 hits, fall back to OR (lenient).
+        for op in ("&", "|"):
+            q = self.sanitize_fts(query, op=op)
+            if not q:
+                return []
+            conn = self._conn()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            sql = """
+                SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
+                       ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,'')),
+                                  to_tsquery('english', %s)) AS rank
+                FROM slides
+                WHERE to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(topics,''))
+                      @@ to_tsquery('english', %s)
+            """
+            params = [q, q]
+            if lecture:
+                sql += " AND lecture = %s"
+                params.append(lecture)
+            sql += " ORDER BY rank DESC LIMIT %s"
+            params.append(limit)
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+            self._close(conn)
+            if rows:
+                return [(r['rank'], dict(r)) for r in rows]
+        return []
 
     def _fts_textbook(self, query, limit=15):
-        q = self.sanitize_fts(query)
-        if not q:
-            return []
-        conn = self._conn()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("""
-            SELECT id, book, page_num, chapter, chapter_title, section_title,
-                   content, page_type, has_equations, has_figures,
-                   ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,'')),
-                              to_tsquery('english', %s)) AS rank
-            FROM textbook_pages
-            WHERE qc_status = 'passed'
-              AND to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,''))
-                  @@ to_tsquery('english', %s)
-            ORDER BY rank DESC LIMIT %s
-        """, (q, q, limit))
-        rows = cur.fetchall()
-        conn.close()
-        return [(r['rank'], dict(r)) for r in rows]
+        for op in ("&", "|"):
+            q = self.sanitize_fts(query, op=op)
+            if not q:
+                return []
+            conn = self._conn()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("""
+                SELECT id, book, page_num, chapter, chapter_title, section_title,
+                       content, page_type, has_equations, has_figures,
+                       ts_rank_cd(to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,'')),
+                                  to_tsquery('english', %s)) AS rank
+                FROM textbook_pages
+                WHERE qc_status = 'passed'
+                  AND to_tsvector('english', COALESCE(content,'') || ' ' || COALESCE(section_title,''))
+                      @@ to_tsquery('english', %s)
+                ORDER BY rank DESC LIMIT %s
+            """, (q, q, limit))
+            rows = cur.fetchall()
+            self._close(conn)
+            if rows:
+                return [(r['rank'], dict(r)) for r in rows]
+        return []
 
     # ─── RRF Fusion ───
 
     def search(self, query: str, lecture: Optional[str] = None,
-               limit: int = 8, alpha: float = 0.6):
+               source: str = "all", limit: int = 8, alpha: float = 0.6):
         """
         Hybrid search with Reciprocal Rank Fusion.
         alpha: weight for vector search (1-alpha for FTS)
+        source: "all" | "slides" | "textbook" — restricts which corpus is searched
         """
+        want_slides = source in ("all", "slides")
+        want_textbook = source in ("all", "textbook")
+
         # Check if any embeddings exist
         conn = self._conn()
         cur = conn.cursor()
@@ -187,27 +215,27 @@ class HybridRetriever:
         has_vec = cur.fetchone()[0] > 0
         cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding IS NOT NULL OR image_embedding IS NOT NULL")
         has_tb_vec = cur.fetchone()[0] > 0
-        conn.close()
+        self._close(conn)
 
-        # Vector search
+        # Vector search (lecture-scoped on slides)
         vs, vb = [], []
-        if has_vec or has_tb_vec:
+        if (want_slides and has_vec) or (want_textbook and has_tb_vec):
             try:
                 qvec = self.embed_text(query)
-                if has_vec:
-                    vs = self._vector_search_slides(qvec, 15)
-                if has_tb_vec:
+                if want_slides and has_vec:
+                    vs = self._vector_search_slides(qvec, lecture=lecture, limit=15)
+                if want_textbook and has_tb_vec:
                     vb = self._vector_search_textbook(qvec, 15)
             except Exception as e:
                 log.warning(f"Vector search failed, falling back to FTS: {e}")
                 alpha = 0.0
 
-        if not (has_vec or has_tb_vec):
+        if not ((want_slides and has_vec) or (want_textbook and has_tb_vec)):
             alpha = 0.0
 
         # FTS search
-        fs = self._fts_slides(query, lecture, 15)
-        fb = self._fts_textbook(query, 15)
+        fs = self._fts_slides(query, lecture, 15) if want_slides else []
+        fb = self._fts_textbook(query, 15) if want_textbook else []
 
         # RRF merge
         k, rrf = 60, {}
@@ -220,10 +248,14 @@ class HybridRetriever:
                 rrf[key]["score"] += w / (k + rank + 1)
 
         if alpha > 0:
-            add(vs, alpha, "slide")
-            add(vb, alpha, "textbook")
-        add(fs, 1 - alpha, "slide")
-        add(fb, 1 - alpha, "textbook")
+            if want_slides:
+                add(vs, alpha, "slide")
+            if want_textbook:
+                add(vb, alpha, "textbook")
+        if want_slides:
+            add(fs, 1 - alpha, "slide")
+        if want_textbook:
+            add(fb, 1 - alpha, "textbook")
 
         merged = sorted(rrf.values(), key=lambda x: -x["score"])
         results = []

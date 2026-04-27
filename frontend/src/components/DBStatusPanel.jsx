@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Database, ChevronDown } from 'lucide-react'
 import { api } from '../api'
 
-export default function DBStatusPanel({ status }) {
+export default function DBStatusPanel({ status, compact = false }) {
   const [open, setOpen] = useState(false)
   const [stats, setStats] = useState(null)
   const ref = useRef(null)
@@ -24,17 +24,20 @@ export default function DBStatusPanel({ status }) {
   const modelName = status?.chat_model?.split('/')[1]?.split(':')[0] || '?'
 
   return (
-    <div className="relative ml-auto" ref={ref}>
+    <div className={`relative ${compact ? '' : 'ml-auto'}`} ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-surface-2 transition-colors"
+        className={`flex items-center gap-1.5 ${compact ? 'px-2 py-1.5' : 'px-2 py-1'} rounded hover:bg-surface-2 transition-colors`}
+        aria-label="Backend status"
       >
         <span className={`w-2 h-2 rounded-full ${status?.status === 'ok' ? 'bg-success' : 'bg-error'}`} />
-        <span className="text-[11px] text-text-dim">
-          {status?.status === 'ok'
-            ? `${modelName} · ${status.db?.embedded || 0} vectors`
-            : 'Backend offline'}
-        </span>
+        {!compact && (
+          <span className="text-[11px] text-text-dim">
+            {status?.status === 'ok'
+              ? `${modelName} · ${status.db?.embedded || 0} vectors`
+              : 'Backend offline'}
+          </span>
+        )}
         <ChevronDown size={10} className={`text-text-dim transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
