@@ -30,8 +30,13 @@ import { visit } from 'unist-util-visit'
  * literal strings.
  */
 function rehypeKatexInRawHtml() {
-  // Tags where we must not touch text nodes
-  const SKIP_TAGS = new Set(['code', 'pre', 'a', 'strong', 'em'])
+  // Tags where we must not touch text nodes.
+  // - code/pre: never reinterpret literal source
+  // - a: links shouldn't be re-processed for math
+  // NOTE: <strong> and <em> ARE processed — they commonly wrap math like
+  // *membrane potential (V_m)* or <em>$Q=CV$</em>; skipping them leaks raw $..$
+  // The .katex className guard below prevents double-processing.
+  const SKIP_TAGS = new Set(['code', 'pre', 'a'])
 
   /**
    * Tokenise `value` into segments tagged by kind:

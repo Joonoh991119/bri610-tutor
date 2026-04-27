@@ -5,30 +5,33 @@
     PSTH construction:  rasters  →  bin counts  →  smoothed rate density
   </text>
 
-  <!-- 3 trial rasters -->
-  <text x="60" y="48" fill="#1f2328" font-weight="600">3 single-trial rasters (same stimulus repeated)</text>
+  <!-- stimulus-onset marker — drawn first so labels render on top -->
+  <line x1="100" y1="36" x2="100" y2="228" stroke="#228833" stroke-width="1" stroke-dasharray="3 3"/>
+  <!-- "stim onset" label ABOVE rasters, top-left -->
+  <text x="104" y="48" fill="#228833" font-weight="600">stim onset</text>
 
+  <!-- 3 trial rasters -->
   <!-- Trial 1 -->
-  <text x="60" y="68" fill="#57606a">trial 1</text>
-  <line x1="100" y1="62" x2="540" y2="62" stroke="#d0d7de" stroke-width="0.7"/>
-  <line x1="120" y1="56" x2="120" y2="68" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="160" y1="56" x2="160" y2="68" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="180" y1="56" x2="180" y2="68" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="245" y1="56" x2="245" y2="68" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="280" y1="56" x2="280" y2="68" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="330" y1="56" x2="330" y2="68" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="420" y1="56" x2="420" y2="68" stroke="#1f2328" stroke-width="1.2"/>
+  <text x="60" y="76" fill="#57606a">trial 1</text>
+  <line x1="100" y1="70" x2="540" y2="70" stroke="#d0d7de" stroke-width="0.7"/>
+  <line x1="120" y1="64" x2="120" y2="76" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="160" y1="64" x2="160" y2="76" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="180" y1="64" x2="180" y2="76" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="245" y1="64" x2="245" y2="76" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="280" y1="64" x2="280" y2="76" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="330" y1="64" x2="330" y2="76" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="420" y1="64" x2="420" y2="76" stroke="#1f2328" stroke-width="1.2"/>
 
   <!-- Trial 2 -->
-  <text x="60" y="92" fill="#57606a">trial 2</text>
-  <line x1="100" y1="86" x2="540" y2="86" stroke="#d0d7de" stroke-width="0.7"/>
-  <line x1="135" y1="80" x2="135" y2="92" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="170" y1="80" x2="170" y2="92" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="195" y1="80" x2="195" y2="92" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="260" y1="80" x2="260" y2="92" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="295" y1="80" x2="295" y2="92" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="335" y1="80" x2="335" y2="92" stroke="#1f2328" stroke-width="1.2"/>
-  <line x1="385" y1="80" x2="385" y2="92" stroke="#1f2328" stroke-width="1.2"/>
+  <text x="60" y="96" fill="#57606a">trial 2</text>
+  <line x1="100" y1="90" x2="540" y2="90" stroke="#d0d7de" stroke-width="0.7"/>
+  <line x1="135" y1="84" x2="135" y2="96" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="170" y1="84" x2="170" y2="96" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="195" y1="84" x2="195" y2="96" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="260" y1="84" x2="260" y2="96" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="295" y1="84" x2="295" y2="96" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="335" y1="84" x2="335" y2="96" stroke="#1f2328" stroke-width="1.2"/>
+  <line x1="385" y1="84" x2="385" y2="96" stroke="#1f2328" stroke-width="1.2"/>
 
   <!-- Trial 3 -->
   <text x="60" y="116" fill="#57606a">trial 3</text>
@@ -41,70 +44,62 @@
   <line x1="325" y1="104" x2="325" y2="116" stroke="#1f2328" stroke-width="1.2"/>
   <line x1="395" y1="104" x2="395" y2="116" stroke="#1f2328" stroke-width="1.2"/>
 
-  <!-- arrow down -->
-  <text x="60" y="132" fill="#1f2328" font-weight="600">spike-count histogram (Δt = 20 ms bins, summed across trials)</text>
+  <text x="60" y="140" fill="#1f2328" font-weight="600">spike-count histogram (Δt = 20 ms bins, summed across trials)</text>
 
   <!-- bin histogram -->
-  <!-- baseline -->
-  <line x1="100" y1="220" x2="540" y2="220" stroke="#57606a"/>
-  <!-- bars -->
-  <rect x="100" y="208" width="20" height="12" fill="#4477aa" opacity="0.85"/>
-  <rect x="120" y="200" width="20" height="20" fill="#4477aa" opacity="0.85"/>
-  <rect x="140" y="188" width="20" height="32" fill="#4477aa" opacity="0.85"/>
-  <rect x="160" y="180" width="20" height="40" fill="#4477aa" opacity="0.85"/>
-  <rect x="180" y="184" width="20" height="36" fill="#4477aa" opacity="0.85"/>
-  <rect x="200" y="200" width="20" height="20" fill="#4477aa" opacity="0.85"/>
-  <rect x="220" y="208" width="20" height="12" fill="#4477aa" opacity="0.85"/>
-  <rect x="240" y="180" width="20" height="40" fill="#4477aa" opacity="0.85"/>
-  <rect x="260" y="172" width="20" height="48" fill="#4477aa" opacity="0.85"/>
-  <rect x="280" y="172" width="20" height="48" fill="#4477aa" opacity="0.85"/>
-  <rect x="300" y="184" width="20" height="36" fill="#4477aa" opacity="0.85"/>
-  <rect x="320" y="180" width="20" height="40" fill="#4477aa" opacity="0.85"/>
-  <rect x="340" y="200" width="20" height="20" fill="#4477aa" opacity="0.85"/>
-  <rect x="360" y="208" width="20" height="12" fill="#4477aa" opacity="0.85"/>
-  <rect x="380" y="200" width="20" height="20" fill="#4477aa" opacity="0.85"/>
-  <rect x="400" y="208" width="20" height="12" fill="#4477aa" opacity="0.85"/>
-  <rect x="420" y="212" width="20" height="8" fill="#4477aa" opacity="0.85"/>
-  <rect x="440" y="216" width="20" height="4" fill="#4477aa" opacity="0.85"/>
+  <line x1="100" y1="228" x2="540" y2="228" stroke="#57606a"/>
+  <rect x="100" y="216" width="20" height="12" fill="#4477aa" opacity="0.85"/>
+  <rect x="120" y="208" width="20" height="20" fill="#4477aa" opacity="0.85"/>
+  <rect x="140" y="196" width="20" height="32" fill="#4477aa" opacity="0.85"/>
+  <rect x="160" y="188" width="20" height="40" fill="#4477aa" opacity="0.85"/>
+  <rect x="180" y="192" width="20" height="36" fill="#4477aa" opacity="0.85"/>
+  <rect x="200" y="208" width="20" height="20" fill="#4477aa" opacity="0.85"/>
+  <rect x="220" y="216" width="20" height="12" fill="#4477aa" opacity="0.85"/>
+  <rect x="240" y="188" width="20" height="40" fill="#4477aa" opacity="0.85"/>
+  <rect x="260" y="180" width="20" height="48" fill="#4477aa" opacity="0.85"/>
+  <rect x="280" y="180" width="20" height="48" fill="#4477aa" opacity="0.85"/>
+  <rect x="300" y="192" width="20" height="36" fill="#4477aa" opacity="0.85"/>
+  <rect x="320" y="188" width="20" height="40" fill="#4477aa" opacity="0.85"/>
+  <rect x="340" y="208" width="20" height="20" fill="#4477aa" opacity="0.85"/>
+  <rect x="360" y="216" width="20" height="12" fill="#4477aa" opacity="0.85"/>
+  <rect x="380" y="208" width="20" height="20" fill="#4477aa" opacity="0.85"/>
+  <rect x="400" y="216" width="20" height="12" fill="#4477aa" opacity="0.85"/>
+  <rect x="420" y="220" width="20" height="8" fill="#4477aa" opacity="0.85"/>
+  <rect x="440" y="224" width="20" height="4" fill="#4477aa" opacity="0.85"/>
 
-  <!-- y-axis label (horizontal, above) -->
-  <text x="100" y="172" fill="#1f2328" font-weight="600">spike density (Hz)</text>
+  <!-- y-axis label -->
+  <text x="100" y="178" fill="#1f2328" font-weight="600">spike density (Hz)</text>
 
-  <!-- smoothed density curve overlaid (CYAN to distinguish from blue bars; redundant encoding via dashed) -->
-  <path d="M 100 214
-           C 130 200, 150 184, 175 178
-           C 200 184, 220 204, 240 195
-           C 260 174, 290 170, 320 178
-           C 345 195, 380 208, 420 216
-           C 450 220, 490 222, 540 222"
+  <!-- smoothed density curve -->
+  <path d="M 100 222
+           C 130 208, 150 192, 175 186
+           C 200 192, 220 212, 240 203
+           C 260 182, 290 178, 320 186
+           C 345 203, 380 216, 420 224
+           C 450 228, 490 230, 540 230"
         fill="none" stroke="#66ccee" stroke-width="2.2" stroke-dasharray="6 3"/>
 
   <!-- single ochre callout: stimulus-locked peak -->
-  <circle cx="270" cy="172" r="5" fill="#ccbb44" stroke="#1f2328" stroke-width="0.8"/>
-  <text x="278" y="160" fill="#1f2328" font-weight="600">stimulus-locked peak</text>
-  <text x="278" y="174" fill="#57606a" font-size="11">(~70 ms post-onset)</text>
-
-  <!-- stimulus-onset marker -->
-  <line x1="100" y1="40" x2="100" y2="220" stroke="#228833" stroke-width="1" stroke-dasharray="3 3"/>
-  <text x="104" y="240" fill="#228833" font-weight="600">stim onset</text>
+  <circle cx="270" cy="180" r="5" fill="#ccbb44" stroke="#1f2328" stroke-width="0.8"/>
+  <text x="278" y="168" fill="#1f2328" font-weight="600">stimulus-locked peak <tspan font-weight="normal" fill="#57606a" font-size="11">(~70 ms post-onset)</tspan></text>
 
   <!-- x-axis -->
-  <line x1="100" y1="240" x2="540" y2="240" stroke="#57606a" stroke-width="0.7"/>
-  <line x1="180" y1="240" x2="180" y2="244" stroke="#57606a"/>
-  <line x1="260" y1="240" x2="260" y2="244" stroke="#57606a"/>
-  <line x1="340" y1="240" x2="340" y2="244" stroke="#57606a"/>
-  <line x1="420" y1="240" x2="420" y2="244" stroke="#57606a"/>
-  <text x="180" y="258" text-anchor="middle" fill="#57606a">50</text>
-  <text x="260" y="258" text-anchor="middle" fill="#57606a">100</text>
-  <text x="340" y="258" text-anchor="middle" fill="#57606a">150</text>
-  <text x="420" y="258" text-anchor="middle" fill="#57606a">200</text>
-  <text x="540" y="258" text-anchor="end" fill="#1f2328">time (ms)</text>
+  <line x1="100" y1="248" x2="540" y2="248" stroke="#57606a" stroke-width="0.7"/>
+  <line x1="180" y1="248" x2="180" y2="252" stroke="#57606a"/>
+  <line x1="260" y1="248" x2="260" y2="252" stroke="#57606a"/>
+  <line x1="340" y1="248" x2="340" y2="252" stroke="#57606a"/>
+  <line x1="420" y1="248" x2="420" y2="252" stroke="#57606a"/>
+  <text x="180" y="264" text-anchor="middle" fill="#57606a">50</text>
+  <text x="260" y="264" text-anchor="middle" fill="#57606a">100</text>
+  <text x="340" y="264" text-anchor="middle" fill="#57606a">150</text>
+  <text x="420" y="264" text-anchor="middle" fill="#57606a">200</text>
+  <text x="540" y="264" text-anchor="end" fill="#1f2328">time (ms)</text>
 
-  <!-- summary bottom -->
-  <text x="60" y="300" fill="#1f2328" font-weight="600">Three rate definitions — when each applies</text>
-  <text x="60" y="314" fill="#57606a">• <tspan fill="#1f2328" font-weight="600">spike count rate</tspan>: time-average over &gt;100 ms — stationary stim</text>
-  <text x="60" y="328" fill="#57606a">• <tspan fill="#1f2328" font-weight="600">PSTH</tspan>: trial-average — needs repeats, fails single-trial decoding</text>
-  <text x="60" y="342" fill="#57606a">• <tspan fill="#1f2328" font-weight="600">population rate</tspan>: instantaneous neuron-average — single-trial OK</text>
+  <!-- summary bottom — bumped to font-size 13 -->
+  <text x="60" y="292" fill="#1f2328" font-weight="600" font-size="13">Three rate definitions — when each applies</text>
+  <text x="60" y="310" fill="#57606a" font-size="13">• <tspan fill="#1f2328" font-weight="600">spike count rate</tspan>: time-average over &gt;100 ms — stationary stim</text>
+  <text x="60" y="328" fill="#57606a" font-size="13">• <tspan fill="#1f2328" font-weight="600">PSTH</tspan>: trial-average — needs repeats, fails single-trial decoding</text>
+  <text x="60" y="346" fill="#57606a" font-size="13">• <tspan fill="#1f2328" font-weight="600">population rate</tspan>: instantaneous neuron-average — single-trial OK</text>
 
-  <text font-style="italic" x="540" y="355" text-anchor="end" fill="#8c959f" font-size="10">Slide L8 p.20–25</text>
+  <text font-style="italic" x="540" y="357" text-anchor="end" fill="#8c959f" font-size="10">Slide L8 p.20–25</text>
 </svg>

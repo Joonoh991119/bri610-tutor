@@ -2,11 +2,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="auto" font-family="Inter, system-ui, sans-serif" font-size="12">
   <rect width="600" height="360" fill="#fafbfc"/>
   <text x="300" y="24" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">
-    LIF f–I curve  —  rheobase  +  saturation at 1 / τ_ref
+    LIF <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">f</tspan>–<tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan> curve  —  rheobase  +  saturation at 1 / τ<tspan font-size="80%" baseline-shift="sub">ref</tspan>
   </text>
 
-  <!-- y-axis label (horizontal, above) -->
-  <text x="60" y="50" fill="#1f2328" font-weight="600">firing rate  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">r</tspan>  (Hz)</text>
+  <!-- y-axis label: ROTATED -90° along the left edge -->
+  <text transform="rotate(-90, 30, 180)" x="30" y="180" text-anchor="middle" fill="#1f2328" font-weight="600">firing rate <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">r</tspan> (Hz)</text>
 
   <!-- plot frame -->
   <line x1="80" y1="60" x2="80" y2="280" stroke="#57606a" stroke-width="1"/>
@@ -22,26 +22,24 @@
 
   <!-- saturation asymptote at r = 1/tau_ref ~ 250 Hz -->
   <line x1="80" y1="100" x2="540" y2="100" stroke="#ee6677" stroke-width="1" stroke-dasharray="4 3"/>
-  <text x="540" y="92" text-anchor="end" fill="#ee6677" font-weight="600">saturation:  r → 1 / τ_ref</text>
+  <text x="540" y="92" text-anchor="end" fill="#ee6677" font-weight="600">saturation:  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">r</tspan> → 1 / τ<tspan font-size="80%" baseline-shift="sub">ref</tspan></text>
 
   <!-- x-axis ticks -->
   <line x1="200" y1="280" x2="200" y2="284" stroke="#57606a"/>
   <line x1="320" y1="280" x2="320" y2="284" stroke="#57606a"/>
   <line x1="440" y1="280" x2="440" y2="284" stroke="#57606a"/>
 
-  <text x="200" y="298" text-anchor="middle" fill="#57606a">I_thr</text>
-  <text x="320" y="298" text-anchor="middle" fill="#57606a">2 I_thr</text>
-  <text x="440" y="298" text-anchor="middle" fill="#57606a">4 I_thr</text>
-  <text x="540" y="312" text-anchor="end" fill="#1f2328">injected current  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I_e</tspan></text>
+  <text x="200" y="298" text-anchor="middle" fill="#57606a"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan><tspan font-size="80%" baseline-shift="sub">thr</tspan></text>
+  <text x="320" y="298" text-anchor="middle" fill="#57606a">2 <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan><tspan font-size="80%" baseline-shift="sub">thr</tspan></text>
+  <text x="440" y="298" text-anchor="middle" fill="#57606a">4 <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan><tspan font-size="80%" baseline-shift="sub">thr</tspan></text>
+  <text x="540" y="312" text-anchor="end" fill="#1f2328">injected current  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan><tspan font-size="80%" baseline-shift="sub">e</tspan></text>
 
   <!-- subthreshold region (no firing) -->
   <line x1="80" y1="280" x2="200" y2="280" stroke="#57606a" stroke-width="3"/>
   <text x="140" y="266" text-anchor="middle" fill="#57606a" font-style="italic">no firing</text>
-  <text x="140" y="252" text-anchor="middle" fill="#57606a" font-size="11">V_∞ &lt; V_th</text>
+  <text x="140" y="252" text-anchor="middle" fill="#57606a" font-size="11"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">∞</tspan> &lt; <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">th</tspan></text>
 
-  <!-- f-I curve: smooth onset above I_thr, log-shaped, asymptoting to r=250 -->
-  <!-- LIF: r(I) = 1 / [tau_m * ln((R*I + E - V_reset)/(R*I + E - V_th))] capped by 1/tau_ref -->
-  <!-- Approximated path -->
+  <!-- f-I curve -->
   <path d="M 200 280
            C 215 268, 230 240, 260 218
            C 290 196, 320 178, 360 160
@@ -52,13 +50,12 @@
   <!-- rheobase marker: single ochre callout -->
   <circle cx="200" cy="280" r="5" fill="#ccbb44" stroke="#1f2328" stroke-width="0.8"/>
   <line x1="200" y1="60" x2="200" y2="280" stroke="#ccbb44" stroke-width="1" stroke-dasharray="2 3"/>
-  <text x="208" y="76" fill="#1f2328" font-weight="600">rheobase  I_thr</text>
+  <text x="208" y="76" fill="#1f2328" font-weight="600">rheobase  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan><tspan font-size="80%" baseline-shift="sub">thr</tspan></text>
   <text x="208" y="114" fill="#1f2328">smallest DC that just barely</text>
-  <text x="208" y="130" fill="#1f2328">drives V_∞ above V_th</text>
+  <text x="208" y="130" fill="#1f2328">drives <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">∞</tspan> above <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">th</tspan></text>
 
-  <!-- threshold-condition equation -->
-  <text x="80" y="322" fill="#1f2328">threshold condition:  R_m · I_e &gt; V_th − E_L</text>
-  <text x="80" y="338" fill="#57606a">closed form:  r(I) = 1 / [ τ_m · ln( (R·I+E_L−V_r) / (R·I+E_L−V_th) ) ]</text>
+  <!-- threshold-condition equation only (closed form dropped) -->
+  <text x="80" y="330" fill="#1f2328">threshold condition:  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">R</tspan><tspan font-size="80%" baseline-shift="sub">m</tspan> · <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan><tspan font-size="80%" baseline-shift="sub">e</tspan> &gt; <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">th</tspan> − <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">L</tspan></text>
 
   <text font-style="italic" x="540" y="352" text-anchor="end" fill="#8c959f" font-size="10">Slide L7 p.15–17</text>
 </svg>

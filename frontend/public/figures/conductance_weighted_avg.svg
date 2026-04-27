@@ -2,7 +2,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="auto" font-family="Inter, system-ui, sans-serif" font-size="12">
   <rect width="600" height="360" fill="#fafbfc"/>
   <text x="300" y="24" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">
-    Conductance-weighted average  V_∞ = (g_K E_K + g_Na E_Na) / (g_K + g_Na)
+    Conductance-weighted average  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">∞</tspan> = (<tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan> + <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan>) / (<tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan> + <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan>)
   </text>
 
   <!-- voltage axis (horizontal number line) -->
@@ -13,53 +13,53 @@
   <line x1="320" y1="166" x2="320" y2="174" stroke="#57606a"/>
   <line x1="500" y1="166" x2="500" y2="174" stroke="#57606a"/>
 
-  <text x="100" y="190" text-anchor="middle" fill="#66ccee" font-weight="600">E_K</text>
+  <text x="100" y="190" text-anchor="middle" fill="#66ccee" font-weight="600"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan></text>
   <text x="100" y="206" text-anchor="middle" fill="#57606a">−90 mV</text>
 
-  <text x="200" y="190" text-anchor="middle" fill="#1f2328" font-weight="600">V_rest</text>
+  <text x="200" y="190" text-anchor="middle" fill="#1f2328" font-weight="600"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">rest</tspan></text>
   <text x="200" y="206" text-anchor="middle" fill="#57606a">−65 mV</text>
 
   <text x="320" y="190" text-anchor="middle" fill="#57606a">0</text>
 
-  <text x="500" y="190" text-anchor="middle" fill="#ee6677" font-weight="600">E_Na</text>
+  <text x="500" y="190" text-anchor="middle" fill="#ee6677" font-weight="600"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan></text>
   <text x="500" y="206" text-anchor="middle" fill="#57606a">+60 mV</text>
 
   <!-- pull arrows: K pulls leftward toward E_K, Na pulls rightward toward E_Na -->
   <!-- thick K arrow (left) showing strong pull -->
   <line x1="200" y1="140" x2="120" y2="140" stroke="#66ccee" stroke-width="6"/>
   <polygon points="120,140 130,134 130,146" fill="#66ccee"/>
-  <text x="160" y="130" text-anchor="middle" fill="#66ccee" font-weight="600">strong K pull (g_K large)</text>
+  <text x="160" y="130" text-anchor="middle" fill="#66ccee" font-weight="600">strong <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan> pull</text>
 
   <!-- thin Na arrow (right) showing weak pull -->
   <line x1="200" y1="118" x2="222" y2="118" stroke="#ee6677" stroke-width="2.4" stroke-dasharray="4 2"/>
   <polygon points="222,118 215,114 215,122" fill="#ee6677"/>
-  <text x="270" y="114" text-anchor="middle" fill="#ee6677" font-weight="600">weak Na pull (g_Na ≈ 0)</text>
+  <text x="276" y="114" text-anchor="middle" fill="#ee6677" font-weight="600">weak <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan> pull (≈ 0)</text>
 
   <!-- single ochre callout: V_rest sits near E_K because K dominates -->
   <circle cx="200" cy="170" r="5" fill="#ccbb44" stroke="#1f2328" stroke-width="0.8"/>
   <text x="200" y="158" text-anchor="middle" fill="#1f2328" font-weight="600">balance point</text>
 
   <!-- divider -->
-  <line x1="60" y1="234" x2="540" y2="234" stroke="#d0d7de" stroke-width="0.7"/>
+  <line x1="60" y1="228" x2="540" y2="228" stroke="#d0d7de" stroke-width="0.7"/>
 
-  <!-- two scenarios bar -->
-  <text x="60" y="252" fill="#1f2328" font-weight="600">Why V_rest sits near E_K</text>
-  <text x="60" y="268" fill="#57606a">V_∞ is a weighted average pulled HARDER by whichever conductance is larger.</text>
+  <!-- two scenarios text + bars (bars BELOW each text line) -->
+  <text x="60" y="246" fill="#1f2328" font-weight="600">Why <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">rest</tspan> sits near <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan></text>
+  <text x="60" y="262" fill="#57606a"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">∞</tspan> is a weighted average pulled HARDER by whichever conductance is larger.</text>
 
-  <!-- scenario 1: rest -->
-  <text x="60" y="294" fill="#66ccee" font-weight="600">Resting:</text>
-  <text x="120" y="294" fill="#1f2328"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g_K</tspan> ≫ <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g_Na</tspan>  →  V_∞ ≈ E_K + small drift toward E_Na  ≈  −65 mV</text>
-  <!-- mini bar -->
-  <rect x="430" y="282" width="80" height="14" fill="#66ccee" opacity="0.85"/>
-  <rect x="430" y="282" width="6" height="14" fill="#ee6677"/>
+  <!-- scenario 1: rest — text first, bar below -->
+  <text x="60" y="284" fill="#66ccee" font-weight="600">Resting:</text>
+  <text x="120" y="284" fill="#1f2328"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan> ≫ <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan>  →  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">∞</tspan> ≈ <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan> + small drift toward <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan> ≈ −65 mV</text>
+  <!-- mini bar below text row 1 -->
+  <rect x="60" y="290" width="80" height="10" fill="#66ccee" opacity="0.85"/>
+  <rect x="60" y="290" width="6" height="10" fill="#ee6677"/>
 
-  <!-- scenario 2: AP upstroke -->
-  <text x="60" y="316" fill="#ee6677" font-weight="600">AP upstroke:</text>
-  <text x="142" y="316" fill="#1f2328"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g_Na</tspan> ≫ <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g_K</tspan>  →  V_∞ ≈ E_Na  ≈  +50 mV (peak)</text>
-  <rect x="430" y="304" width="6" height="14" fill="#66ccee"/>
-  <rect x="436" y="304" width="74" height="14" fill="#ee6677" opacity="0.85"/>
+  <!-- scenario 2: AP upstroke — text first, bar below -->
+  <text x="60" y="318" fill="#ee6677" font-weight="600">AP upstroke:</text>
+  <text x="142" y="318" fill="#1f2328"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan> ≫ <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g</tspan><tspan font-size="80%" baseline-shift="sub">K</tspan>  →  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan><tspan font-size="80%" baseline-shift="sub">∞</tspan> ≈ <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">Na</tspan> ≈ +50 mV (peak)</text>
+  <!-- mini bar below text row 2 -->
+  <rect x="60" y="324" width="6" height="10" fill="#66ccee"/>
+  <rect x="66" y="324" width="74" height="10" fill="#ee6677" opacity="0.85"/>
 
   <!-- footer -->
-  <text x="60" y="344" fill="#57606a" font-style="italic">V_∞ moves between E_K and E_Na as the g_K : g_Na ratio shifts.</text>
-  <text font-style="italic" x="540" y="344" text-anchor="end" fill="#8c959f" font-size="10">Slide L3 p.30</text>
+  <text font-style="italic" x="540" y="350" text-anchor="end" fill="#8c959f" font-size="10">Slide L3 p.30</text>
 </svg>

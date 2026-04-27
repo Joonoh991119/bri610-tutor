@@ -3,72 +3,62 @@
   <!-- paper -->
   <rect width="600" height="360" fill="#fafbfc"/>
   <!-- title -->
-  <text x="300" y="24" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">Driving force (V − E_X) — direction flips at E_X</text>
+  <text x="300" y="24" text-anchor="middle" fill="#1f2328" font-size="14" font-weight="600">Driving force (<tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan> − <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan>) — direction flips at <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan></text>
 
   <!-- axis -->
-  <line x1="60" y1="180" x2="540" y2="180" stroke="#57606a" stroke-width="1"/>
+  <line x1="60" y1="190" x2="540" y2="190" stroke="#57606a" stroke-width="1"/>
   <!-- axis ticks -->
-  <line x1="120" y1="176" x2="120" y2="184" stroke="#57606a" stroke-width="0.8"/>
-  <line x1="240" y1="176" x2="240" y2="184" stroke="#57606a" stroke-width="0.8"/>
-  <line x1="360" y1="176" x2="360" y2="184" stroke="#57606a" stroke-width="0.8"/>
-  <line x1="450" y1="176" x2="450" y2="184" stroke="#57606a" stroke-width="0.8"/>
+  <line x1="120" y1="186" x2="120" y2="194" stroke="#57606a" stroke-width="0.8"/>
+  <line x1="240" y1="186" x2="240" y2="194" stroke="#57606a" stroke-width="0.8"/>
+  <line x1="360" y1="186" x2="360" y2="194" stroke="#57606a" stroke-width="0.8"/>
+  <line x1="450" y1="186" x2="450" y2="194" stroke="#57606a" stroke-width="0.8"/>
 
   <!-- labels under axis -->
-  <text x="120" y="200" text-anchor="middle" fill="#57606a">−90 mV</text>
-  <text x="240" y="200" text-anchor="middle" fill="#57606a">−65 mV</text>
-  <text x="360" y="200" text-anchor="middle" fill="#1f2328" font-weight="600">E_X</text>
-  <text x="360" y="216" text-anchor="middle" fill="#8c959f">(reversal)</text>
-  <text x="450" y="200" text-anchor="middle" fill="#57606a">+30 mV</text>
+  <text x="120" y="210" text-anchor="middle" fill="#57606a">−90 mV</text>
+  <text x="240" y="210" text-anchor="middle" fill="#57606a">−65 mV</text>
+  <text x="360" y="218" text-anchor="middle" fill="#1f2328" font-weight="600"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan> <tspan fill="#8c959f" font-weight="normal" font-size="11">(reversal)</tspan></text>
+  <text x="450" y="210" text-anchor="middle" fill="#57606a">+30 mV</text>
 
   <!-- axis title -->
-  <text x="540" y="230.0" text-anchor="end" fill="#1f2328"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan>  (membrane potential)</text>
+  <text x="540" y="248" text-anchor="end" fill="#1f2328"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan> (membrane potential)</text>
 
   <!-- E_X vertical guide -->
-  <line x1="360" y1="60" x2="360" y2="300" stroke="#ccbb44" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <line x1="360" y1="60" x2="360" y2="310" stroke="#ccbb44" stroke-width="1.2" stroke-dasharray="4 3"/>
   <!-- single ochre callout -->
-  <circle cx="360" cy="180" r="5" fill="#ccbb44" stroke="#1f2328" stroke-width="0.8"/>
-  <text x="372" y="86" fill="#1f2328" font-weight="600">at V = E_X: driving force = 0,</text>
-  <text x="372" y="100" fill="#1f2328" font-weight="600">net current reverses sign</text>
+  <circle cx="360" cy="190" r="5" fill="#ccbb44" stroke="#1f2328" stroke-width="0.8"/>
+  <text x="372" y="86" fill="#1f2328" font-weight="600">at <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan> = <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan>: driving force = 0,<tspan x="372" dy="14">net current reverses sign</tspan></text>
 
-  <!-- y-axis labels (horizontal, above) -->
-  <text x="60" y="50" fill="#1f2328" font-weight="600">Driving force  (<tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan> − <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E_X</tspan>)</text>
-  <text x="60" y="68" fill="#8c959f">arrow length ∝ magnitude · arrow direction = current sign</text>
+  <!-- subtitle (arrow convention) -->
+  <text x="60" y="56" fill="#8c959f">arrow length ∝ magnitude · arrow direction = current sign</text>
 
   <!-- LEFT: V &lt; E_X — negative driving force, cation INTO the cell -->
-  <!-- arrow base at V points toward E_X (rightward = into cell for cation) -->
-  <text x="120" y="118" text-anchor="middle" fill="#4477aa" font-weight="600">V &lt; E_X  (hyperpolarized)</text>
-  <text x="120" y="134" text-anchor="middle" fill="#57606a">cation pulled INTO cell</text>
-  <!-- big leftward-from-E arrow showing inward force at V=120 -->
-  <line x1="120" y1="160" x2="200" y2="160" stroke="#4477aa" stroke-width="3"/>
-  <polygon points="200,160 192,156 192,164" fill="#4477aa"/>
-  <text x="160" y="152" text-anchor="middle" fill="#4477aa">inward (negative I)</text>
+  <text x="120" y="120" text-anchor="middle" fill="#4477aa" font-weight="600"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan> &lt; <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan>  (hyperpolarized)</text>
+  <text x="120" y="136" text-anchor="middle" fill="#57606a">cation pulled INTO cell</text>
+  <!-- big arrow showing inward force -->
+  <line x1="120" y1="166" x2="200" y2="166" stroke="#4477aa" stroke-width="3"/>
+  <polygon points="200,166 192,162 192,170" fill="#4477aa"/>
+  <text x="160" y="158" text-anchor="middle" fill="#4477aa">inward (negative <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan>)</text>
 
-  <!-- middle hyperpol  (smaller) -->
-  <line x1="240" y1="160" x2="290" y2="160" stroke="#4477aa" stroke-width="2.4" stroke-dasharray="6 3"/>
-  <polygon points="290,160 282,156 282,164" fill="#4477aa"/>
-  <text x="265" y="166.0" text-anchor="middle" fill="#4477aa">smaller inward</text>
+  <!-- middle arrow (smaller inward) — label ABOVE the arrow, not on top of axis -->
+  <line x1="240" y1="166" x2="290" y2="166" stroke="#4477aa" stroke-width="2.4" stroke-dasharray="6 3"/>
+  <polygon points="290,166 282,162 282,170" fill="#4477aa"/>
+  <text x="265" y="152" text-anchor="middle" fill="#4477aa">smaller</text>
 
   <!-- RIGHT: V &gt; E_X — positive driving force, cation OUT -->
-  <text x="450" y="114" text-anchor="middle" fill="#ee6677" font-weight="600">V &gt; E_X  (depolarized)</text>
-  <text x="450" y="128" text-anchor="middle" fill="#57606a">cation pushed OUT of cell</text>
-  <line x1="450" y1="160" x2="510" y2="160" stroke="#ee6677" stroke-width="3"/>
-  <polygon points="510,160 502,156 502,164" fill="#ee6677"/>
-  <text x="480" y="152" text-anchor="middle" fill="#ee6677">outward (positive I)</text>
+  <text x="450" y="120" text-anchor="middle" fill="#ee6677" font-weight="600"><tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan> &gt; <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan>  (depolarized)</text>
+  <text x="450" y="136" text-anchor="middle" fill="#57606a">cation pushed OUT of cell</text>
+  <line x1="450" y1="166" x2="510" y2="166" stroke="#ee6677" stroke-width="3"/>
+  <polygon points="510,166 502,162 502,170" fill="#ee6677"/>
+  <text x="480" y="158" text-anchor="middle" fill="#ee6677">outward (positive <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan>)</text>
 
-  <!-- below-axis annotation: equation -->
-  <text x="300" y="252" text-anchor="middle" fill="#1f2328" font-size="13">
-    <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I_X</tspan> =
-    <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">g_X</tspan>
+  <!-- equation block -->
+  <text x="300" y="268" text-anchor="middle" fill="#1f2328" font-size="13">
+    <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan> =
+    <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif"> g</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan>
     · ( <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan>
-      − <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E_X</tspan> )
+      − <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan> )
   </text>
-  <text x="300" y="272" text-anchor="middle" fill="#57606a">Ohm's law for an ion channel — sign of (V−E_X) sets current direction</text>
-
-  <!-- worked example: K and Na drive points -->
-  <text x="60" y="286" fill="#228833" font-weight="600">Example  E_K ≈ −90 mV:</text>
-  <text x="60" y="300" fill="#57606a">at rest (V ≈ −65), V − E_K ≈ +25 mV → K flows OUT (repolarizing)</text>
-  <text x="60" y="316" fill="#ee6677" font-weight="600">Example  E_Na ≈ +60 mV:</text>
-  <text x="60" y="330" fill="#57606a">at rest (V ≈ −65), V − E_Na ≈ −125 mV → Na flows IN (depolarizing)</text>
+  <text x="300" y="288" text-anchor="middle" fill="#57606a">Ohm's law for an ion channel — sign of (<tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V</tspan>−<tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E</tspan><tspan font-size="80%" baseline-shift="sub">X</tspan>) sets current direction</text>
 
   <!-- footer -->
   <text font-style="italic" x="540" y="344" text-anchor="end" fill="#8c959f" font-size="10">Slide L4 p.6 / L3 p.27</text>
