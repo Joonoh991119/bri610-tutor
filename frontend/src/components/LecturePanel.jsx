@@ -247,6 +247,34 @@ function LectureInProgress({ session, onExit }) {
     }
   }
 
+  // MCQ choice handler — auto-advance on selection (with 1.4s feedback flash)
+  const handleChoice = async (chosenKey) => {
+    if (advancing || submitted) return
+    setAnswer(chosenKey)
+    setSubmitted(true)
+    const correct = chosenKey === step?.correct_key
+    setSubmitMsg(correct ? '정답!' : `오답 — 정답: ${step.correct_key}`)
+    setAdvancing(true)
+    try {
+      // Best-effort log; ignore failure
+      api.lectureSubmit(session.session_id, chosenKey).catch(() => {})
+      // Show rationale + colour for 1.6s, then advance
+      setTimeout(async () => {
+        try {
+          await api.lectureAdvance(session.session_id)
+          await narrate()
+        } catch (e) {
+          console.error('lectureAdvance failed', e)
+        } finally {
+          setAdvancing(false)
+        }
+      }, 1600)
+    } catch (e) {
+      console.error('handleChoice failed', e)
+      setAdvancing(false)
+    }
+  }
+
   if (isComplete) {
     return <CompleteBanner title_ko={session.title_ko} onRestart={onExit} />
   }
@@ -414,10 +442,10 @@ function LectureInProgress({ session, onExit }) {
               </div>
             </div>
 
-            {/* Intuition check input */}
+            {/* Intuition check — MCQ + auto-advance (v0.7.8) */}
             {kind === 'intuition_check' && step.micro_question && (
               <div
-                className="px-7 pb-2 pt-5 reveal"
+                className="px-7 pb-5 pt-5 reveal"
                 style={{ borderTop: '1px solid var(--color-border-soft)' }}
               >
                 {/* Question callout */}
@@ -432,25 +460,85 @@ function LectureInProgress({ session, onExit }) {
                     className="text-[11px] uppercase tracking-[0.18em] mb-2 font-semibold"
                     style={{ color: kindColor }}
                   >
-                    직관 확인 질문
+                    직관 확인 질문 (객관식)
                   </p>
                   <div className="prose max-w-none" style={{ fontSize: '0.97rem' }}>
                     <Markdown>{step.micro_question}</Markdown>
                   </div>
                 </div>
 
-                {submitted ? (
-                  <div
-                    className="py-3 text-center text-sm font-semibold rounded-lg reveal"
-                    style={{
-                      background: 'color-mix(in oklab, var(--color-success) 10%, transparent)',
-                      color: 'var(--color-success)',
-                      border: '1px solid color-mix(in oklab, var(--color-success) 28%, transparent)',
-                    }}
-                  >
-                    {submitMsg}
+                {/* MCQ choices — auto-advance on click */}
+                {Array.isArray(step.choices) && step.choices.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {step.choices.map(opt => {
+                      const sel = answer === opt.key
+                      const isThisCorrect = submitted && opt.key === step.correct_key
+                      const isThisWrong = submitted && sel && opt.key !== step.correct_key
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => handleChoice(opt.key)}
+                          disabled={submitted || advancing}
+                          className="w-full text-left px-4 py-3 rounded-lg text-sm flex items-start gap-3 transition-all"
+                          style={{
+                            background: isThisCorrect
+                              ? 'color-mix(in oklab, var(--color-success) 12%, transparent)'
+                              : isThisWrong
+                                ? 'color-mix(in oklab, var(--color-error) 12%, transparent)'
+                                : sel
+                                  ? `color-mix(in oklab, ${kindColor} 12%, transparent)`
+                                  : 'var(--color-bg)',
+                            border: `1px solid ${
+                              isThisCorrect
+                                ? 'var(--color-success)'
+                                : isThisWrong
+                                  ? 'var(--color-error)'
+                                  : sel
+                                    ? kindColor
+                                    : 'var(--color-border)'
+                            }`,
+                            color: 'var(--color-text)',
+                            cursor: submitted || advancing ? 'default' : 'pointer',
+                            opacity: submitted && !isThisCorrect && !isThisWrong ? 0.55 : 1,
+                          }}
+                        >
+                          <span className="font-bold mt-0.5 shrink-0" style={{ color: kindColor }}>{opt.key}.</span>
+                          <span className="flex-1 markdown-body" style={{ fontSize: '0.92rem' }}>
+                            <Markdown>{opt.text}</Markdown>
+                          </span>
+                          {isThisCorrect && <span className="text-[var(--color-success)] font-bold shrink-0">✓</span>}
+                          {isThisWrong && <span className="text-[var(--color-error)] font-bold shrink-0">✗</span>}
+                        </button>
+                      )
+                    })}
+
+                    {/* Rationale + auto-advance status */}
+                    {submitted && (
+                      <div
+                        className="mt-3 rounded-lg px-4 py-3 text-sm reveal"
+                        style={{
+                          background: 'color-mix(in oklab, var(--color-accent) 6%, transparent)',
+                          border: '1px solid color-mix(in oklab, var(--color-accent) 24%, transparent)',
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-1.5 font-semibold text-[12px]" style={{ color: 'var(--color-accent)' }}>
+                          <span>{submitMsg}</span>
+                          {advancing && (
+                            <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-[var(--color-text-dim)]">
+                              <Loader2 size={11} className="animate-spin" /> 다음 단계로...
+                            </span>
+                          )}
+                        </div>
+                        {step.rationale && (
+                          <div className="markdown-body text-[12px]" style={{ color: 'var(--color-text)' }}>
+                            <Markdown>{step.rationale}</Markdown>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
+                  // Legacy fallback — short-answer textarea (only if choices not provided)
                   <div className="flex flex-col gap-2.5">
                     <textarea
                       value={answer}
@@ -465,18 +553,13 @@ function LectureInProgress({ session, onExit }) {
                         fontFamily: 'var(--font-serif)',
                         lineHeight: 1.7,
                       }}
-                      onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
-                      onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
-                      disabled={advancing}
+                      disabled={advancing || submitted}
                     />
                     <button
                       onClick={handleSubmit}
-                      disabled={!answer.trim() || advancing}
+                      disabled={!answer.trim() || advancing || submitted}
                       className="self-end px-5 py-2 rounded-lg text-sm font-semibold inline-flex items-center gap-2 transition-all disabled:opacity-50"
-                      style={{
-                        background: kindColor,
-                        color: '#fff',
-                      }}
+                      style={{ background: kindColor, color: '#fff' }}
                     >
                       {advancing
                         ? <><Loader2 size={14} className="animate-spin" /> 제출 중...</>

@@ -35,7 +35,10 @@ class LectureStep:
     title_ko: str
     slide_refs: list[str]       # ['L3 p.12', 'L3 p.13', ...]
     instruction_md: str         # what the student should do at this step (Tutor expands)
-    micro_question: Optional[str] = None  # for intuition_check kind only
+    micro_question: Optional[str] = None    # for intuition_check kind only — STEM ONLY (no answer leak)
+    choices: Optional[list] = None          # MCQ: [{"key":"A","text":"..."}, ...]
+    correct_key: Optional[str] = None       # MCQ: "A" | "B" | ...
+    rationale: Optional[str] = None         # shown after answer reveal
 
 
 @dataclass
@@ -60,7 +63,15 @@ _L3_PLAN = LecturePlan(
         LectureStep(3, "intuition_check", "Capacitor 직관 점검",
                     ["L3 p.17", "L3 p.18"],
                     "**핵심 직관**: 막 = *축전기* (charge 저장 ∝ voltage). $Q = CV$ 가 막 양쪽 ion 분리에 그대로 적용 — 양쪽 ion 농도차가 $Q$, 막전위가 $V$ [Slide L3 p.17]. *왜* 얇을수록 $C$ 가 큰가? 두 도체판이 가까울수록 *같은 voltage* 에 더 많은 charge 가 모이기 때문 ($C \\propto 1/d$).",
-                    micro_question="만약 막 두께가 절반이 되면 $C_m$ 은 어떻게 변하는가? (정답: 2배 — $C \\propto 1/d$, 평행판 축전기 공식)."),
+                    micro_question="막 두께가 *절반* 이 되면 $C_m$ 은 어떻게 변하는가?",
+                    choices=[
+                        {"key": "A", "text": "1/2 배"},
+                        {"key": "B", "text": "변화 없음"},
+                        {"key": "C", "text": "2 배"},
+                        {"key": "D", "text": "4 배"},
+                    ],
+                    correct_key="C",
+                    rationale="평행판 축전기 공식 $C = \\varepsilon\\varepsilon_0/d$ — 두께 $d$ 가 분모이므로 *반비례*. 두께 절반 → $C$ *2 배*."),
         LectureStep(4, "derive", "$I_C = C \\, dV/dt$ 1줄 유도",
                     ["L3 p.19", "L3 p.20"],
                     "**목표**: $Q=CV$ → $I_C = C\\,dV/dt$. \n1) $Q = CV$ 양변을 $t$ 로 미분.\n2) $C$ 는 막 기하 (시간 무관) → $dQ/dt = C\\,dV/dt$.\n3) 정의상 $I = dQ/dt$ → $I_C = C\\,dV/dt$.\n*직관*: $V$ 가 변하지 않으면 charge 가 새로 채워지지 않으므로 $I_C = 0$. p.20 정량값 (1 nA → 1 mV/ms) 인용."),
@@ -102,7 +113,15 @@ _L5_PLAN = LecturePlan(
         LectureStep(6, "intuition_check", "$m^3 h$ vs $n^4$ — 왜 다른 형태?",
                     ["L5 p.25", "L5 p.26", "L5 p.27"],
                     "**핵심**: Na 채널은 게이트 종류가 *둘* (activation m, inactivation h) 이라 *곱셈* 형태. m=activation 3개 + h=inactivation 1개 모두 열려야 통과 → $P_{Na} = m^3 h$. K 의 단일 게이트 $n^4$ 와 구조적으로 다름.",
-                    micro_question="m=1, h=0 인 voltage 영역에서 Na current 는? (정답: 0 — $m^3 h = 1\\cdot 0 = 0$, h 게이트가 닫혀 활성 m 가 100%여도 차단)."),
+                    micro_question="$m = 1, h = 0$ 인 voltage 영역에서 Na current 의 크기는?",
+                    choices=[
+                        {"key": "A", "text": "최대 ($m = 1$ 이므로)"},
+                        {"key": "B", "text": "0 ($h = 0$ 이 차단)"},
+                        {"key": "C", "text": "절반 ($m \\times h$ 평균)"},
+                        {"key": "D", "text": "$m^3$ 만큼"},
+                    ],
+                    correct_key="B",
+                    rationale="$P_\\text{Na} = m^3 h = 1 \\cdot 0 = 0$. *Inactivation* gate ($h$) 가 닫히면 *activation* ($m$) 이 100% 라도 채널은 차단된다 — 두 게이트 모두 열려야 함 (AND 조건)."),
         LectureStep(7, "expose", "전체 HH 식 + 시뮬레이션",
                     ["L5 p.29", "L5 p.30"],
                     "**핵심**: $i_m = g_L(V-E_L) + \\bar g_K n^4 (V-E_K) + \\bar g_{Na} m^3 h (V-E_{Na})$ — 각 항 = (현재 conductance) × *driving force* $V - E_X$ (이온의 *움직이고 싶은* 방향). $n,m,h$ 는 각자 ODE 따라 진화. Simulated AP 의 모양: 빠른 상승 (Na) → 정점 → K 가 끌어내림 → AHP."),
@@ -132,7 +151,15 @@ _L6_PLAN = LecturePlan(
         LectureStep(5, "intuition_check", "$\\lambda$ 의 의미 직관 점검",
                     ["L6 p.11"],
                     "**핵심**: $\\lambda$ = 막전위가 1/e (≈37%) 로 떨어지는 거리. $x=\\lambda$ → 37%, $x=2\\lambda$ → 14%, $x=3\\lambda$ → 5%. 즉 *3λ 너머* 는 신호 거의 사라짐. axon 굵기에 의해 결정.",
-                    micro_question="만약 직경 $d$ 가 4배가 되면 $\\lambda$ 는 몇 배? (정답: 2배 — $\\lambda \\propto \\sqrt{d}$, 제곱근 의존)."),
+                    micro_question="직경 $d$ 가 *4 배* 가 되면 공간상수 $\\lambda$ 는 몇 배가 되는가?",
+                    choices=[
+                        {"key": "A", "text": "2 배"},
+                        {"key": "B", "text": "4 배"},
+                        {"key": "C", "text": "16 배"},
+                        {"key": "D", "text": "$\\sqrt{2}$ 배"},
+                    ],
+                    correct_key="A",
+                    rationale="$\\lambda = \\sqrt{d R_m / 4 R_i}$ — 직경 *제곱근* 의존. $d$ 가 4배 → $\\sqrt{4} = 2$ 배. 직관: 굵은 호스가 더 멀리 보내지만 *제곱근* 으로만."),
         LectureStep(6, "expose", "Multi-compartment 수치 모델",
                     ["L6 p.13", "L6 p.14"],
                     "**핵심**: 폐형 해가 안 되는 경우 (active conductance, 분기 dendrite, 비균질 $R_m$) → axon 을 작은 RC 회로 *체인* 으로 잘라 ODE 시스템을 수치 해법. NEURON·MOOSE 등 표준 시뮬레이터의 출발점. PDE → 연결된 ODE 들로 환원."),
@@ -163,7 +190,15 @@ _L4_PLAN = LecturePlan(
         LectureStep(4, "intuition_check", "NMDA 의 \"AND-gate\" 직관",
                     ["L4 p.16", "L4 p.21"],
                     "**핵심**: NMDA = *동시 만족* 검출기 — (i) glutamate 결합 *그리고* (ii) 막 탈분극 둘 다 필요. Mg²⁺ 가 휴지 막전위에서 채널 입구를 막고 있다가 V↑ 시 빠짐 (voltage-dependent block). 분자 수준의 \"AND gate\" — Hebbian 학습의 물리적 기반.",
-                    micro_question="휴지 막전위 -65mV 에서 glutamate 만 NMDA 에 결합하면? (정답: 거의 안 열림 — Mg²⁺ block 이 막힘. 막이 *먼저* AMPA 등으로 탈분극되어야 NMDA 가 열림 → \"동시 활성\" 검출.)"),
+                    micro_question="휴지 막전위 $-65$ mV 에서 glutamate *만* NMDA 에 결합하면 무슨 일이 일어나는가?",
+                    choices=[
+                        {"key": "A", "text": "정상 활성화 — Na, Ca 유입"},
+                        {"key": "B", "text": "거의 안 열림 — $\\text{Mg}^{2+}$ block 이 막음"},
+                        {"key": "C", "text": "K 채널이 열림"},
+                        {"key": "D", "text": "AMPA 가 자동 열림"},
+                    ],
+                    correct_key="B",
+                    rationale="휴지 막전위에서 음전하인 $\\text{Mg}^{2+}$ 이 voltage 에 끌려 NMDA 채널 입구를 막고 있다 (*voltage-dependent block*). 막이 *먼저* AMPA 등으로 탈분극 되어야 $\\text{Mg}^{2+}$ 가 풀려 NMDA 가 활성화 — 이것이 *coincidence detection* (동시 활성 검출) 의 분자 기반."),
         LectureStep(5, "derive", "Conductance-based synaptic current",
                     ["L4 p.21", "L4 p.27"],
                     "**목표**: 시냅스 전류식 = conductance × driving force.\n$I_{syn} = g_{syn}(t)(V - E_{syn})$.\n1) $g_{syn}(t)$: 시냅스 활성 후 일시적으로 켜짐 (시간 의존).\n2) $V - E_{syn}$: *driving force* — 이온이 *움직이고 싶은 방향과 세기*.\n3) 두 인자의 곱이 PSP 의 모양 (시간) 과 부호 (EPSP/IPSP) 둘 다 결정. L5 HH 와 같은 ohmic 형식."),
@@ -196,7 +231,15 @@ _L7_PLAN = LecturePlan(
         LectureStep(4, "intuition_check", "Spike-rate adaptation 의 메커니즘",
                     ["L7 p.18", "L7 p.19"],
                     "**핵심**: 지속 입력 시 firing rate 가 *점차 감소* — cortical 뉴런의 보편 행동. 메커니즘: spike 발화 때마다 K-conductance $g_{sra}$ (slow K) 가 *누적* → 막을 끌어내려 다음 발화 어려워짐. *변화 검출기* 역할.",
-                    micro_question="adaptation 없는 순수 LIF 만 있다면 감각 시스템에 무슨 문제? (정답: 일정 입력에 일정 발화만 → 변화 둔감. adaptation 이 있어야 *contrast/온오프 전이* 검출 가능 — 시각·청각의 핵심 기능.)"),
+                    micro_question="*adaptation 이 없는* 순수 LIF 만 있다면 감각 시스템 (시각·청각) 에 어떤 한계가 생기는가?",
+                    choices=[
+                        {"key": "A", "text": "발화율이 너무 빠르다"},
+                        {"key": "B", "text": "AP peak 가 낮아진다"},
+                        {"key": "C", "text": "*변화* 를 검출 못 함 — 일정 입력에 일정 발화만"},
+                        {"key": "D", "text": "AHP 가 사라진다"},
+                    ],
+                    correct_key="C",
+                    rationale="Adaptation 이 없으면 *지속 자극에도 일정 rate* 로 계속 발화 → 자극의 *시작/끝* 같은 *변화* 신호를 강조 못 함. 시각의 *contrast* 검출, 청각의 *onset* 검출 같은 *transient* 응답은 adaptation 의 K-current 누적이 만든다."),
         LectureStep(5, "derive", "Adaptive LIF (aLIF) 식",
                     ["L7 p.23", "L7 p.24"],
                     "**목표**: LIF + spike-triggered K-current.\n1) Voltage ODE: $\\tau_m dV/dt = -(V-E_L) - R_m g_{sra}(V-E_K) + R_m I_{ext}$ — *driving force* $V-E_K$ 음수 항이 막을 K 평형으로 끌어내림.\n2) Adaptation ODE: $\\tau_{sra} dg_{sra}/dt = -g_{sra}$ — 자연 감쇠.\n3) 발화 시 jump: $g_{sra}\\mathrel{+}=\\Delta g$. 누적된 $g_{sra}$ 가 firing rate 를 점차 끌어내림."),
@@ -226,7 +269,15 @@ _L8_PLAN = LecturePlan(
         LectureStep(3, "intuition_check", "3 가지 \"rate\" 의 차이",
                     ["L8 p.20", "L8 p.21", "L8 p.22", "L8 p.23"],
                     "**핵심**: \"firing rate\" 는 셋 중 어느 평균인지에 따라 의미가 다르다. (i) **time-average** — 한 뉴런 한 trial 100 ms 창. (ii) **trial-average** (PSTH) — 같은 자극 N회 반복 평균. (iii) **population-average** — 동시 N 뉴런 평균. 각각 다른 가정·다른 사용 가능 영역.",
-                    micro_question="개구리가 파리를 잡을 때 trial-average rate 를 사용 가능한가? (정답: 불가 — 행동 응답 ~100 ms 안에 결정되어야 하고 trial 은 1회뿐. *single-trial population-average* 또는 timing 이 필요.)"),
+                    micro_question="개구리가 *날아오는 파리* 를 잡으려는 *single trial* 의 빠른 행동에서, *trial-average rate* (PSTH) 를 사용 가능한가?",
+                    choices=[
+                        {"key": "A", "text": "가능 — PSTH 가 표준 도구"},
+                        {"key": "B", "text": "불가능 — trial 은 1 회뿐, 행동은 ~100 ms 안에 결정"},
+                        {"key": "C", "text": "가능 — 1 회로도 평균 가능"},
+                        {"key": "D", "text": "관계 없음"},
+                    ],
+                    correct_key="B",
+                    rationale="*Trial-average* (PSTH) 는 정의상 같은 자극의 *반복 시행* 평균. 단발 행동에선 trial = 1 → 평균 불가능. 빠른 행동은 *single-trial population-average* (동시 활성 뉴런들의 순간 평균) 또는 *temporal code* 에 의존."),
         LectureStep(4, "expose", "Time-to-first-spike — Thorpe 1996",
                     ["L8 p.32", "L8 p.33", "L8 p.34"],
                     "**핵심**: 첫 spike *시각* 자체가 정보를 운반 — rate 평균을 낼 시간 없음. Thorpe 1996: 사람이 자연 장면을 ~150 ms 안에 분류 → 시각 cascade 각 단계 (망막→V1→IT) 에서 뉴런당 평균 1 spike 만 사용 가능. 첫 spike timing 으로 분류 완료."),
@@ -333,6 +384,9 @@ def _step_to_dict(step: LectureStep, plan: LecturePlan, step_num: int) -> dict:
         "slide_images": slide_images,    # NEW: image URLs for inline rendering
         "instruction_md": step.instruction_md,
         "micro_question": step.micro_question,
+        "choices": step.choices,         # MCQ format (intuition_check)
+        "correct_key": step.correct_key,
+        "rationale": step.rationale,
     }
 
 
