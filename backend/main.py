@@ -37,7 +37,7 @@ IMG_DIR = os.environ.get("IMG_DIR", DATA_DIR)  # slide images live in data/L2/, 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 CHAT_MODEL = os.environ.get("CHAT_MODEL", "qwen/qwen3.6-plus-preview:free")
-EMBED_MODEL = os.environ.get("EMBED_MODEL", "nvidia/llama-nemotron-embed-vl-1b-v2:free")
+EMBED_MODEL = os.environ.get("EMBED_MODEL", "bge-m3:latest")
 DB_DSN = os.environ.get("DATABASE_URL", "dbname=bri610 user=tutor password=tutor610 host=localhost")
 
 app = FastAPI(title="BRI610 AI Tutor", version="0.3.0")

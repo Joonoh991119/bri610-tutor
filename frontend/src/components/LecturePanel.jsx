@@ -358,6 +358,46 @@ function LectureInProgress({ session, onExit }) {
               </div>
             )}
 
+            {/* Slide images — inline visual context for this step */}
+            {Array.isArray(step.slide_images) && step.slide_images.length > 0 && (
+              <div
+                className="px-7 pt-5 pb-3"
+                style={{ borderBottom: '1px solid var(--color-border-soft)' }}
+              >
+                <p
+                  className="text-[11px] uppercase tracking-[0.18em] mb-3"
+                  style={{ color: 'var(--color-text-faint)' }}
+                >
+                  관련 슬라이드 ({step.slide_images.length})
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {step.slide_images.map((si, i) => (
+                    <a
+                      key={i}
+                      href={si.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-lg overflow-hidden border border-border-soft hover:border-accent transition-colors"
+                      title={si.ref}
+                    >
+                      <img
+                        src={si.url}
+                        alt={si.ref}
+                        loading="lazy"
+                        style={{ width: '100%', display: 'block', background: 'var(--color-surface-2)' }}
+                      />
+                      <div
+                        className="text-[10px] py-1 text-center"
+                        style={{ color: 'var(--color-text-dim)', background: 'var(--color-surface)' }}
+                      >
+                        {si.ref}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Narration */}
             <div className="px-7 py-7">
               <p

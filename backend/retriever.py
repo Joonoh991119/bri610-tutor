@@ -27,13 +27,17 @@ EMBED_DIM = 2048
 
 class HybridRetriever:
     def __init__(self, openrouter_key: str,
-                 embed_model: str = "nvidia/llama-nemotron-embed-vl-1b-v2:free",
+                 embed_model: str = "bge-m3:latest",
                  db_dsn: str = None):
         self.db_dsn = db_dsn or DB_DSN
         self.api_key = openrouter_key
         self.embed_model = embed_model
-        self.embed_url = "https://openrouter.ai/api/v1/embeddings"
-        self.dim = EMBED_DIM
+        # BGE-M3 via local Ollama — top of MTEB multilingual, 1024-dim, free + fast.
+        # Fallback to OpenRouter only if Ollama is unreachable.
+        self.embed_url_local = "http://localhost:11434/api/embeddings"
+        self.embed_url_remote = "https://openrouter.ai/api/v1/embeddings"
+        self.dim = 1024 if "bge-m3" in embed_model.lower() else EMBED_DIM
+        self.use_v2_columns = "bge-m3" in embed_model.lower()
 
     def _conn(self):
         conn = _pool_acquire()
@@ -49,9 +53,10 @@ class HybridRetriever:
     # ─── Embedding ───
 
     def _post_embed(self, payload, retries=3):
+        # OpenRouter embeddings (legacy path for Nemotron/etc)
         for attempt in range(retries):
             try:
-                r = requests.post(self.embed_url,
+                r = requests.post(self.embed_url_remote,
                     headers={"Authorization": f"Bearer {self.api_key}",
                              "Content-Type": "application/json"},
                     json={"model": self.embed_model, **payload},
@@ -68,7 +73,29 @@ class HybridRetriever:
                     log.error(f"Embedding failed: {e}")
                     raise
 
+    def _ollama_embed(self, text: str, retries: int = 3):
+        """BGE-M3 via local Ollama — primary path when use_v2_columns is True."""
+        for attempt in range(retries):
+            try:
+                r = requests.post(self.embed_url_local,
+                    json={"model": self.embed_model, "prompt": text[:8000]},
+                    timeout=30)
+                r.raise_for_status()
+                return r.json()["embedding"]
+            except Exception as e:
+                if attempt < retries - 1:
+                    time.sleep(1)
+                else:
+                    log.warning(f"Ollama embed failed: {e}; falling back to OpenRouter")
+                    raise
+
     def embed_text(self, text: str) -> list:
+        if self.use_v2_columns:
+            try:
+                return self._ollama_embed(text)
+            except Exception:
+                # Fallback to OpenRouter Nemotron if Ollama down
+                return self._post_embed({"input": [text[:8000]]})
         return self._post_embed({"input": [text[:8000]]})
 
     # ─── FTS helper ───
@@ -87,25 +114,26 @@ class HybridRetriever:
     # ─── Vector Search (pgvector brute-force cosine) ───
 
     def _vector_search_slides(self, query_vec, lecture=None, limit=15):
-        """Cosine similarity search on slides.embedding. Honors lecture filter."""
+        """Cosine similarity on slides. Uses embedding_v2 (BGE-M3) when present, else legacy embedding."""
+        col = "embedding_v2" if self.use_v2_columns else "embedding"
         conn = self._conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         if lecture:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
-                       1 - (embedding <=> %s::vector) AS similarity
+                       1 - ({col} <=> %s::vector) AS similarity
                 FROM slides
-                WHERE embedding IS NOT NULL AND lecture = %s
-                ORDER BY embedding <=> %s::vector
+                WHERE {col} IS NOT NULL AND lecture = %s
+                ORDER BY {col} <=> %s::vector
                 LIMIT %s
             """, (query_vec, lecture, query_vec, limit))
         else:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT id, lecture, lecture_title, page_num, content, img_path, topics,
-                       1 - (embedding <=> %s::vector) AS similarity
+                       1 - ({col} <=> %s::vector) AS similarity
                 FROM slides
-                WHERE embedding IS NOT NULL
-                ORDER BY embedding <=> %s::vector
+                WHERE {col} IS NOT NULL
+                ORDER BY {col} <=> %s::vector
                 LIMIT %s
             """, (query_vec, query_vec, limit))
         rows = cur.fetchall()

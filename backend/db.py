@@ -41,15 +41,23 @@ class DB:
         slides = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE qc_status='passed'")
         pages = cur.fetchone()[0]
+        # Prefer v2 (BGE-M3 1024-dim) embeddings; fall back to legacy v1 (Nemotron 2048)
+        cur.execute("SELECT COUNT(*) FROM slides WHERE embedding_v2 IS NOT NULL")
+        slides_v2 = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM slides WHERE embedding IS NOT NULL")
-        slides_emb = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE qc_status='passed' AND text_embedding IS NOT NULL")
-        pages_emb = cur.fetchone()[0]
+        slides_v1 = cur.fetchone()[0]
+        slides_emb = max(slides_v2, slides_v1)
+        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding_v2 IS NOT NULL")
+        pages_v2 = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding IS NOT NULL")
+        pages_v1 = cur.fetchone()[0]
+        pages_emb = max(pages_v2, pages_v1)
         self._close(conn)
         return {
             "slides": slides, "textbook_pages": pages,
             "total": slides + pages,
             "embedded": slides_emb + pages_emb,
+            "embedded_v2_bge_m3": slides_v2 + pages_v2,
         }
 
     def detailed_stats(self):

@@ -14,7 +14,30 @@ function timeAgo(isoStr) {
 }
 
 export default function SummaryPanel({ lectures }) {
-  const [lecture, setLecture] = useState('L2')
+  // Initial lecture: read from localStorage so cross-summary hyperlinks land
+  // on the correct lecture (set by Markdown.jsx when user clicks #summary?lecture=Lx)
+  const initialLecture = (() => {
+    try {
+      const stored = localStorage.getItem('bri610.summary.lecture')
+      if (stored && /^L[2-8]$/.test(stored)) return stored
+    } catch {}
+    return 'L2'
+  })()
+  const [lecture, setLecture] = useState(initialLecture)
+
+  // Listen for hashchange to update lecture when a cross-link is clicked while already on #summary
+  useEffect(() => {
+    const onHash = () => {
+      try {
+        const stored = localStorage.getItem('bri610.summary.lecture')
+        if (stored && /^L[2-8]$/.test(stored) && stored !== lecture) {
+          setLecture(stored)
+        }
+      } catch {}
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [lecture])
   const [focus, setFocus] = useState('')
   const [cached, setCached] = useState(null)
   const [liveResult, setLiveResult] = useState(null)
