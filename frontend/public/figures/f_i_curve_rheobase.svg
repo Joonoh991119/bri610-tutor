@@ -32,7 +32,7 @@
   <text x="200" y="298" text-anchor="middle" fill="#57606a">I_thr</text>
   <text x="320" y="298" text-anchor="middle" fill="#57606a">2 I_thr</text>
   <text x="440" y="298" text-anchor="middle" fill="#57606a">4 I_thr</text>
-  <text x="540" y="298" text-anchor="end" fill="#1f2328">injected current  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I_e</tspan></text>
+  <text x="540" y="312" text-anchor="end" fill="#1f2328">injected current  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I_e</tspan></text>
 
   <!-- subthreshold region (no firing) -->
   <line x1="80" y1="280" x2="200" y2="280" stroke="#57606a" stroke-width="3"/>
@@ -57,15 +57,8 @@
   <text x="208" y="106" fill="#1f2328">drives V_∞ above V_th</text>
 
   <!-- threshold-condition equation -->
-  <text x="80" y="328" fill="#1f2328">
-    threshold condition:  <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">R_m</tspan>
-    <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">I_e</tspan> &gt;
-    <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">V_th</tspan> −
-    <tspan font-style="italic" font-family="'Source Serif 4', 'Source Serif Pro', serif">E_L</tspan>
-  </text>
-  <text x="80" y="344" fill="#57606a">
-    closed form:  r(I) = 1 / [ τ_m  ln( (R_m I + E_L − V_reset) / (R_m I + E_L − V_th) ) ]
-  </text>
+  <text x="80" y="322" fill="#1f2328">threshold condition:  R_m · I_e &gt; V_th − E_L</text>
+  <text x="80" y="338" fill="#57606a">closed form:  r(I) = 1 / [ τ_m · ln( (R·I+E_L−V_r) / (R·I+E_L−V_th) ) ]</text>
 
-  <text x="540" y="344" text-anchor="end" fill="#8c959f" font-size="10">Slide L7 p.15–17</text>
+  <text x="540" y="352" text-anchor="end" fill="#8c959f" font-size="10">Slide L7 p.15–17</text>
 </svg>

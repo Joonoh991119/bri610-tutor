@@ -40,11 +40,11 @@ function rehypeKatexInRawHtml() {
    */
   function tokenise(value) {
     // Combined regex with named groups, ordered by priority
-    // (?<dmath>  $$...$$  )
-    // (?<imath>  $...$    )
+    // (?<dmath>  $$...$$  ) — allows newlines inside display math blocks
+    // (?<imath>  $...$    ) — requires non-space after opening $ to avoid currency matches
     // (?<bold>   **...**  )  — must come before italic
     // (?<italic> *...*    )
-    const re = /(?<dmath>\$\$(?:[^$]|\$(?!\$))+?\$\$)|(?<imath>\$[^$\n]+?\$)|(?<bold>\*\*(?:[^*]|\*(?!\*))+?\*\*)|(?<italic>\*(?:[^*\n]+?)\*)/gs
+    const re = /(?<dmath>\$\$[\s\S]+?\$\$)|(?<imath>\$(?=[^\s$])(?:[^$\n]|\\\$)+?(?<=[^\s\\])\$)|(?<bold>\*\*(?:[^*]|\*(?!\*))+?\*\*)|(?<italic>\*(?:[^*\n]+?)\*)/gs
     const tokens = []
     let last = 0
     let m
@@ -115,8 +115,12 @@ function rehypeKatexInRawHtml() {
   return (tree) => {
     visit(tree, 'text', (node, index, parent) => {
       if (!node.value) return
-      // Skip protected contexts
+      // Skip protected contexts (tag name or class-based katex spans)
       if (parent && SKIP_TAGS.has(parent.tagName)) return
+      // Skip nodes already inside a rendered KaTeX element
+      if (parent && parent.properties &&
+          Array.isArray(parent.properties.className) &&
+          parent.properties.className.some(c => c === 'katex' || c === 'katex-html' || c === 'katex-display')) return
 
       const tokens = tokenise(node.value)
 

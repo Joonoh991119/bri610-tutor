@@ -61,9 +61,13 @@
   /* Body: serif (journal-article voice).
      UI: sans-serif (clean labels and chrome).
      Mono: monospace ligature-aware. */
-  --font-sans:  'SamsungOne', 'SamsungSharpSans', 'One UI', Inter, 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, 'Roboto', 'Noto Sans KR', sans-serif;
+  /* Body/UI: Pretendard (modern humanist sans, full CJK) as primary;
+     IBM Plex Sans KR as secondary CJK fallback; system-ui thereafter.
+     Intentionally excludes generic Inter/Roboto — Pretendard subsumes both. */
+  --font-sans:  'Pretendard', 'IBM Plex Sans KR', 'Apple SD Gothic Neo',
+                -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-serif: 'Source Serif 4', 'Source Serif Pro', 'Charter', 'Iowan Old Style', Georgia, serif;
-  --font-mono:  'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SF Mono, monospace;
+  --font-mono:  'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
 
   /* ── Galaxy / One UI mobile geometry ─────────────────────────────── */
   --safe-top:    env(safe-area-inset-top, 0px);
@@ -186,6 +190,8 @@ body {
   font-style: italic;
   background: var(--color-accent-soft);
   border-radius: 0 4px 4px 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .prose ul, .prose ol,
@@ -225,6 +231,10 @@ body {
   border: 1px solid var(--color-border);
   padding: 0.45em 0.8em;
   text-align: left;
+  min-height: 2em;
+  font-variant-numeric: tabular-nums;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .prose th,
 .markdown-body th {
@@ -233,10 +243,13 @@ body {
   color: var(--color-text-bright);
 }
 
-/* KaTeX — sit comfortably in the serif paragraph */
-.katex { color: var(--color-text); font-size: 1.05em; vertical-align: -0.05em; white-space: nowrap; }
+/* KaTeX — sit comfortably in the serif paragraph.
+   font-size: inherit so math scales with surrounding prose.
+   vertical-align: baseline to prevent mid-line bumping.
+   Do NOT override KaTeX_Main font — KaTeX manages its own CM font stack. */
+.katex { color: var(--color-text); font-size: inherit; vertical-align: baseline; white-space: nowrap; }
 .katex-display {
-  margin: 1.2em 0;
+  margin: 1em 0;
   padding: 0.5em 0;
   overflow-x: auto;
   overflow-y: hidden;

@@ -107,9 +107,9 @@
   <text x="300" y="270" text-anchor="middle" fill="#1f2328">the neuron is precise (sub-ms) — variability comes from</text>
   <text x="300" y="284" text-anchor="middle" fill="#1f2328">a flat stimulus, not from the cell.</text>
 
-  <text x="60" y="316" fill="#57606a">DC: at each spike, V crosses V_th from a slowly-drifting trajectory  →  threshold-crossing time is sensitive to channel noise.</text>
-  <text x="60" y="330" fill="#57606a">Frozen noise: V is steered to V_th by sharp, repeatable upswings  →  threshold time is locked to the input.</text>
-  <text x="60" y="344" fill="#57606a" font-style="italic">Implication: temporal codes are physically achievable — provided the input contains time-structured information.</text>
+  <text x="60" y="310" fill="#57606a">DC: threshold-crossing time sensitive to channel noise (slowly-drifting V).</text>
+  <text x="60" y="324" fill="#57606a">Frozen noise: threshold locked to sharp, repeatable input upswings.</text>
+  <text x="60" y="338" fill="#57606a" font-style="italic">Implication: temporal codes are achievable — if the input is time-structured.</text>
 
-  <text x="540" y="344" text-anchor="end" fill="#8c959f" font-size="10">Slide L8 p.74</text>
+  <text x="540" y="352" text-anchor="end" fill="#8c959f" font-size="10">Slide L8 p.74</text>
 </svg>
