@@ -262,7 +262,7 @@ AGENT_MAP = {
 
 class AgentTeam:
     def __init__(self, retriever, openrouter_key: str,
-                 chat_model: str = "qwen/qwen3.6-plus"):
+                 chat_model: str = "deepseek/deepseek-v4-pro"):
         self.retriever = retriever
         self.api_key = openrouter_key       # kept for back-compat; harness uses env
         self.chat_model = chat_model        # kept for back-compat (legacy fallback)

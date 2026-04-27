@@ -36,7 +36,10 @@ DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), ".
 IMG_DIR = os.environ.get("IMG_DIR", DATA_DIR)  # slide images live in data/L2/, data/L3/, etc.
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-CHAT_MODEL = os.environ.get("CHAT_MODEL", "qwen/qwen3.6-plus-preview:free")
+# Default chat model — DeepSeek V4 Pro: best science-reasoning per dollar in
+# SOTA tier as of 2026-04. $0.44/M prompt + $0.87/M completion (vs Kimi K2.6's
+# $4.66/M completion); 1M context handles lecture + slides + history.
+CHAT_MODEL = os.environ.get("CHAT_MODEL", "deepseek/deepseek-v4-pro")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "bge-m3:latest")
 DB_DSN = os.environ.get("DATABASE_URL", "dbname=bri610 user=tutor password=tutor610 host=localhost")
 
