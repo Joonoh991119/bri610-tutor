@@ -91,6 +91,10 @@ export const api = {
   lectureNarrate: (sid, expand = true) => post('/lecture/narrate', { session_id: sid, expand }),
   lectureAdvance: (sid) => post('/lecture/advance', { session_id: sid }),
   lectureSubmit:  (sid, answer) => post('/lecture/submit', { session_id: sid, answer }),
+  // v0.7 pre-built bank (course-inheritance: summary + narration + quiz + take-home)
+  quizBank:      (lecture) => get(`/quiz/bank/${lecture}`),
+  takeHome:      (lecture) => get(`/take-home/${lecture}`),
+  courseSlim:    (lecture) => get(`/course/${lecture}`),
   // 1-hour Course
   courseOverview: () => get('/course/overview'),
   courseStart:    (userId = 1) => post(`/course/start?user_id=${userId}`, {}),

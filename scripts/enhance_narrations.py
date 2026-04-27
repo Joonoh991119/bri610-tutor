@@ -13,13 +13,31 @@ Run as a background script — each narration step takes ~30-90s. 48 total steps
 (L3..L8 × 8 steps each) → ~30-60 min.
 """
 from __future__ import annotations
-import os, sys, json, urllib.request, time, psycopg2
+import os, sys, json, urllib.request, time, re, pathlib, psycopg2
 
 DB_DSN = os.environ.get('DATABASE_URL', 'dbname=bri610 user=tutor password=tutor610 host=localhost')
-KEY = os.environ.get('OPENROUTER_API_KEY')
-if not KEY:
-    print('OPENROUTER_API_KEY missing — abort', file=sys.stderr)
-    sys.exit(1)
+
+
+def _load_openrouter_key() -> str:
+    """Find OPENROUTER_API_KEY: env first, then user shell rc files (user-authorized)."""
+    k = os.environ.get('OPENROUTER_API_KEY')
+    if k:
+        return k
+    for rc in ('.zshrc', '.bashrc', '.bash_profile', '.zprofile', '.profile'):
+        p = pathlib.Path.home() / rc
+        if not p.exists():
+            continue
+        try:
+            for line in p.read_text().splitlines():
+                m = re.match(r'\s*export\s+OPENROUTER_API_KEY\s*=\s*[\"\']?([^\"\'\s]+)', line)
+                if m:
+                    return m.group(1)
+        except Exception:
+            continue
+    raise SystemExit('OPENROUTER_API_KEY not in env or shell rc — set and retry.')
+
+
+KEY = _load_openrouter_key()
 
 MODEL = 'deepseek/deepseek-v4-pro'
 

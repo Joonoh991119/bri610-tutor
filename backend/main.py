@@ -358,6 +358,94 @@ def bank_next(user_id: int = 1, limit: int = 10):
     return {"user_id": user_id, "queue": rows, "count": len(rows), "mode": "adaptive"}
 
 
+# ─── v0.7: Pre-built quiz bank + take-home exam (course-inheritance) ──
+
+@app.get("/api/quiz/bank/{lecture}")
+def quiz_bank_lecture(lecture: str):
+    """List all pre-built quiz items for a lecture (MCQ + short-answer)."""
+    conn = db._conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, position, kind, prompt_md, choices_json, correct_key,
+                       correct_text, accept_patterns, rationale_md, slide_ref,
+                       difficulty, bloom, topic_tag
+                FROM quiz_items
+                WHERE lecture = %s
+                ORDER BY position
+            """, (lecture,))
+            rows = cur.fetchall()
+        items = [
+            {
+                "id": r[0], "position": r[1], "kind": r[2], "prompt_md": r[3],
+                "choices": r[4], "correct_key": r[5], "correct_text": r[6],
+                "accept_patterns": r[7], "rationale_md": r[8], "slide_ref": r[9],
+                "difficulty": r[10], "bloom": r[11], "topic_tag": r[12],
+            }
+            for r in rows
+        ]
+        return {"lecture": lecture, "count": len(items), "items": items}
+    finally:
+        db._close(conn)
+
+
+@app.get("/api/take-home/{lecture}")
+def take_home_lecture(lecture: str):
+    """List all take-home exam items for a lecture (derivation + essay)."""
+    conn = db._conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, position, kind, prompt_md, model_answer_md, rubric_md,
+                       max_points, expected_time_min, slide_ref, topic_tag
+                FROM take_home_exam
+                WHERE lecture = %s
+                ORDER BY position
+            """, (lecture,))
+            rows = cur.fetchall()
+        items = [
+            {
+                "id": r[0], "position": r[1], "kind": r[2], "prompt_md": r[3],
+                "model_answer_md": r[4], "rubric_md": r[5],
+                "max_points": r[6], "expected_time_min": r[7],
+                "slide_ref": r[8], "topic_tag": r[9],
+            }
+            for r in rows
+        ]
+        return {"lecture": lecture, "count": len(items), "items": items}
+    finally:
+        db._close(conn)
+
+
+@app.get("/api/course/{lecture}")
+def course_view(lecture: str):
+    """Course-inheritance view: summary + narration stub-counts + quiz/take-home counts."""
+    conn = db._conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT s.lecture, s.summary, s.generated_at,
+                       (SELECT COUNT(*) FROM lecture_narrations n WHERE n.lecture=s.lecture) AS narration_steps,
+                       (SELECT COUNT(*) FROM quiz_items q WHERE q.lecture=s.lecture) AS quiz_n,
+                       (SELECT COUNT(*) FROM take_home_exam t WHERE t.lecture=s.lecture) AS take_home_n
+                FROM lecture_summaries s
+                WHERE s.lecture = %s
+            """, (lecture,))
+            row = cur.fetchone()
+        if not row:
+            raise HTTPException(404, detail=f"No course data for {lecture}")
+        return {
+            "lecture": row[0],
+            "summary": row[1],
+            "summary_generated_at": row[2].isoformat() if row[2] else None,
+            "narration_steps": row[3],
+            "quiz_n": row[4],
+            "take_home_n": row[5],
+        }
+    finally:
+        db._close(conn)
+
+
 # ─── Lecture mode (Opus-designed guided tours) ───────────────────────
 
 @app.get("/api/lecture/list")
