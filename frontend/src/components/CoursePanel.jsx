@@ -1,7 +1,67 @@
 import { useState, useEffect, useRef } from 'react'
-import { Play, Clock, Target, ChevronRight, CheckCircle2, XCircle, Trophy, RotateCcw } from 'lucide-react'
+import { Play, Clock, Target, ChevronRight, CheckCircle2, XCircle, Trophy, RotateCcw, BookOpen, GraduationCap, FileQuestion, ClipboardList } from 'lucide-react'
 import { api } from '../api'
 import Markdown from './Markdown'
+
+/**
+ * StudyGuide — compact, per-lecture inheritance card (summary + lecture +
+ * quiz + take-home). Implements user mandate v0.7:
+ *   "코스에 서머리와 강의와 퀴즈를 상속시켜서 컴팩트한 학습 가이드"
+ *
+ * Each row queries /api/course/{lecture} for narration / quiz / take-home
+ * counts and offers one-click navigation to the corresponding tab.
+ */
+function LectureRow({ lecture }) {
+  const [data, setData] = useState(null)
+  useEffect(() => {
+    api.courseSlim(lecture).then(setData).catch(() => setData({}))
+  }, [lecture])
+
+  const goTo = (tab, lec) => {
+    try { localStorage.setItem(`bri610.${tab}.lecture`, lec) } catch {}
+    window.location.hash = tab
+  }
+
+  return (
+    <div className="rounded-xl border border-border-soft bg-surface p-3 mb-2">
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-semibold text-text-bright">{lecture}</span>
+        <span className="text-[10px] text-text-dim" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          요약 {data ? Math.round((data.summary?.length || 0) / 1000) : '-'}k자 ·
+          나레이션 {data?.narration_steps ?? '-'}단계 ·
+          퀴즈 {data?.quiz_n ?? '-'}문항 ·
+          논술 {data?.take_home_n ?? '-'}문항
+        </span>
+      </div>
+      <div className="grid grid-cols-4 gap-1.5">
+        <button onClick={() => goTo('summary', lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
+          <BookOpen size={14} /> 서머리
+        </button>
+        <button onClick={() => goTo('lecture', lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
+          <GraduationCap size={14} /> 강의
+        </button>
+        <button onClick={() => goTo('quiz', lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
+          <FileQuestion size={14} /> 퀴즈
+        </button>
+        <button onClick={() => goTo('quiz', lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
+          <ClipboardList size={14} /> 논술
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function StudyGuide() {
+  const lectures = ['L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8']
+  return (
+    <div className="mb-6">
+      <h3 className="text-sm font-semibold text-text-bright mb-2 flex items-center gap-2">
+        <BookOpen size={14} /> 강의별 학습 가이드 (서머리 → 강의 → 퀴즈 → 논술)
+      </h3>
+      {lectures.map(l => <LectureRow key={l} lecture={l} />)}
+    </div>
+  )
+}
 
 /**
  * 1-hour compact L2~L8 course panel.
@@ -89,6 +149,7 @@ export default function CoursePanel() {
     if (!overview || (overview.total_questions ?? 0) === 0) {
       return (
         <div className="p-6 max-w-3xl mx-auto">
+          <StudyGuide />
           <h2 className="text-xl font-bold mb-2 text-text-bright">1시간 컴팩트 코스 (L2 ~ L8)</h2>
           <p className="text-text-dim text-sm mb-4">
             아직 문항이 준비되지 않았어요. Opus 출제자 에이전트가 28문항을 작성 중이에요. 잠시 후 다시 확인해주세요.
@@ -107,6 +168,9 @@ export default function CoursePanel() {
 
     return (
       <div className="p-6 max-w-3xl mx-auto">
+        {/* v0.7 — 강의별 학습 가이드 (summary + lecture + quiz + take-home inheritance) */}
+        <StudyGuide />
+
         <div className="mb-6">
           <h2 className="text-xl font-bold mb-2 text-text-bright">1시간 컴팩트 코스</h2>
           <p className="text-text-dim text-sm">
