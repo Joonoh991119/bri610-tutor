@@ -105,7 +105,10 @@ export default function SummaryPanel({ lectures }) {
   const isCached = !liveResult && cached
 
   return (
-    <div className="h-full overflow-y-auto p-6 max-w-3xl mx-auto">
+    // pb-32 ensures the last paragraph / figure isn't clipped by the bottom nav
+    // (mobile) or main's overflow boundary (desktop). max-w expands to 4xl so
+    // the prose 76ch + figure full-width (max-w-3xl was clipping figures).
+    <div className="h-full overflow-y-auto p-6 pb-32 max-w-4xl mx-auto">
       {/* Controls */}
       <div className="bg-surface rounded-xl border border-border p-4 mb-6">
         <h2 className="text-sm font-semibold text-text-bright mb-3 flex items-center gap-2">

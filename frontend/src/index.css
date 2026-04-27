@@ -284,22 +284,59 @@ body {
     padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bot) + 4px);
   }
 
+  /* ── Issue 2: Reading width — prose takes full viewport on mobile ── */
+  .prose {
+    max-width: 100%;
+  }
+
+  /* ── Issue 8: Slightly larger text for narrow Galaxy screens ──────── */
   /* Markdown body — comfortable Korean reading on Galaxy width (~390px) */
   .prose, .markdown-body {
-    font-size: 1.02rem;
+    font-size: 1.04rem;
     line-height: 1.78;
+  }
+
+  /* ── Issue 3: Heading top-margin reduced for mobile density ──────── */
+  .prose h1, .prose h2, .prose h3, .prose h4,
+  .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+    margin: 1.5em 0 0.5em;
   }
   .prose h1, .markdown-body h1 { font-size: 1.4em; }
   .prose h2, .markdown-body h2 { font-size: 1.18em; }
   .prose h3, .markdown-body h3 { font-size: 1.04em; }
 
-  /* KaTeX inline math overflow protection */
+  /* ── Issue 4: KaTeX display-block overflow — horizontal scroll on narrow screens.
+     Do NOT touch inline .katex here — adding display:inline-block or overflow-x
+     on inline math breaks baseline alignment and wraps mid-formula.
+     Only display math blocks get overflow scrolling. */
   .katex-display {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     padding-left: 4px;
     padding-right: 4px;
+    max-width: 100%;
+  }
+
+  /* ── Issue 7: Figure embed margin — tighter on mobile ─────────────── */
+  .prose figure, .markdown-body figure {
+    margin: 1.2em auto;
+  }
+
+  /* ── Issue 1: figcaption — simpler hairline style on mobile ───────── */
+  .prose figcaption, .markdown-body figcaption {
+    /* Remove panel-style left-border + surface-2 background */
+    background: transparent;
+    border-left: none;
+    border-radius: 0;
+    padding: 0;
+    /* Hairline top border instead of rounded panel */
+    border-top: 1px solid var(--color-border-soft);
+    margin-top: 0.6em;
+    font-size: 0.85em;
+    color: var(--color-text-dim);
+    text-align: left;
+    font-style: normal;
   }
 
   /* SVG figures full-bleed inside narrow viewport */
@@ -308,7 +345,7 @@ body {
     height: auto;
   }
 
-  /* `<details>` toggle — One UI surface card */
+  /* ── Issue 5: details/summary tap targets — min 48px on mobile ─────── */
   .prose details, .markdown-body details {
     background: var(--color-surface);
     border: 1px solid var(--color-border-soft);
@@ -322,6 +359,10 @@ body {
     font-size: 0.96em;
     color: var(--color-accent);
     list-style: none;
+    /* One UI 48px tap target */
+    min-height: 48px;
+    display: flex;
+    align-items: center;
     padding: 4px 0;
   }
   .prose details summary::-webkit-details-marker,
@@ -331,6 +372,22 @@ body {
     margin-bottom: 8px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--color-border-soft);
+  }
+
+  /* ── Issue 5: cross-summary links — active/hover states ─────────── */
+  .prose a, .markdown-body a {
+    /* Slightly larger active area for touch */
+    padding: 1px 0;
+  }
+  .prose a:active, .markdown-body a:active {
+    color: var(--color-accent-dim);
+    text-decoration-thickness: 2px;
+  }
+
+  /* ── Issue 6: bottom clearance — ensure summary panel isn't clipped */
+  /* main already has padding-bottom set above; reinforce for nested panels */
+  main > *:last-child {
+    padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bot) + 4px);
   }
 }
 
