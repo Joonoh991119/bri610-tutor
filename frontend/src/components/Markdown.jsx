@@ -8,6 +8,62 @@ import { fromHtml } from 'hast-util-from-html'
 import { visit } from 'unist-util-visit'
 
 /**
+ * ───────────────────────────────────────────────────────────────────────────
+ *  TeX rendering hook chain — read this before touching anything below.
+ * ───────────────────────────────────────────────────────────────────────────
+ *
+ * Pipeline (ordered, each step's output is the next step's input):
+ *
+ *   ① remark-parse                 markdown text  → MDAST
+ *   ② remarkGfm                    enables tables, strikethrough, autolinks
+ *   ③ remarkMath                   captures `$..$` / `$$..$$` *in markdown source*
+ *                                   → math nodes (does NOT see inside HTML blocks)
+ *   ④ remark-rehype                MDAST → HAST (with raw HTML preserved)
+ *   ⑤ rehypeRaw                    parses `<figure>`, `<details>`, `<table>`, ...
+ *                                   raw HTML strings into HAST element nodes
+ *   ⑥ rehypeKatexInRawHtml [HERE]  walks every text node in HAST; for nodes that
+ *                                   `$..$` / `$$..$$` / `**..**` / `*..*` survived
+ *                                   (because their parent was an HTML element so
+ *                                   remarkMath skipped them), tokenises and renders
+ *                                   inline. KaTeX → HAST via hast-util-from-html.
+ *   ⑦ rehypeKatex                  renders the math nodes that remarkMath captured
+ *                                   in step ③
+ *   ⑧ react-markdown               HAST → React elements
+ *
+ *  Why ⑥ is required:
+ *    `<figcaption>그림 — 막전위 $V_m$ 이 $E_K$...</figcaption>`
+ *    raw `$V_m$` survives to the HAST tree because remark-math at step ③ never
+ *    looks *inside* an opaque HTML block. Without ⑥, the user sees literal `$V_m$`.
+ *
+ *  Tokenisation priority (⑥ tokenise()):
+ *    1. $$..$$  display math   (allows newlines: [\s\S]+?)
+ *    2. $..$    inline math    (rejects open-`$` followed by space → blocks `$50` currency)
+ *    3. **..**  bold           (preference over italic to avoid 4-asterisk runs splitting)
+ *    4. *..*    italic         (no newlines, max greedy until next `*`)
+ *    5. text                   plain remainder
+ *
+ *  Skip rules:
+ *    - Parent tagName ∈ {'code','pre','a'} → never reinterpret literal source / link text
+ *    - Parent has `.katex` className (already-rendered math) → don't double-process
+ *    - <strong> and <em> ARE walked because users author `*membrane potential ($V_m$)*`
+ *
+ *  Common authoring bugs the hook DOES NOT auto-fix (sweep DB content separately):
+ *    - Nested `$X($Y$)$` — collapse to `$X(Y)$`
+ *    - Multi-char subscript without braces (e.g., `Na_v` → `N` + `a_v`)
+ *      Fix: `\text{Na}_v` for chemical symbols; `g_{\text{Na}}` etc.
+ *    - Raw LaTeX outside `$..$` (`\tau`, `\to`, `\sqrt{...}`)
+ *    - Orphan `$` (odd dollar count → unmatched delimiters parse as text)
+ *    See `scripts/fix_katex_syntax.py` for the DB-content sweep.
+ *
+ *  Detail of step ⑥: the plugin walks text nodes and tokenises. Math is rendered to
+ *  HTML via katex.renderToString({throwOnError:false}) and re-parsed to HAST element
+ *  nodes through `fromHtml(...).children`. We use type:'element' nodes (NOT type:'raw',
+ *  which react-markdown v10 silently downgrades back to literal strings). Bold/italic
+ *  are recursively tokenised so `**중요: $V_m$ 도입**` works.
+ * ───────────────────────────────────────────────────────────────────────────
+ */
+
+/**
  * Custom rehype plugin that runs AFTER rehype-raw has parsed HTML strings
  * into the HAST tree. At that point, text nodes inside <figcaption>,
  * <details>, <summary>, table cells, etc. are plain text nodes containing
