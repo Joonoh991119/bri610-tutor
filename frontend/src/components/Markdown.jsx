@@ -51,9 +51,10 @@ export default function Markdown({ children }) {
         figure: ({ node, ...props }) => (
           <figure
             style={{
-              margin: '1.4em 0',
+              margin: '2em auto',
               padding: '0.5em 0',
               textAlign: 'center',
+              maxWidth: '100%',
             }}
             {...props}
           />
@@ -61,12 +62,19 @@ export default function Markdown({ children }) {
         figcaption: ({ node, ...props }) => (
           <figcaption
             style={{
-              fontSize: '0.85em',
-              color: 'var(--color-text-dim)',
-              fontStyle: 'italic',
-              marginTop: '0.5em',
+              fontSize: '0.92em',
+              color: 'var(--color-text)',
+              fontStyle: 'normal',
+              lineHeight: '1.6',
+              textAlign: 'left',
+              maxWidth: '90%',
+              margin: '0 auto',
+              padding: '0.4em 1em 0.5em',
               fontFamily: 'var(--font-sans)',
               letterSpacing: '0.01em',
+              background: 'var(--color-surface-2)',
+              borderRadius: '6px',
+              borderLeft: '2px solid var(--color-accent-soft)',
             }}
             {...props}
           />

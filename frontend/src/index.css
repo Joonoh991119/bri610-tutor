@@ -116,12 +116,18 @@ body {
 .markdown-body {
   font-family: var(--font-serif);
   font-size: 1rem;
-  line-height: 1.75;
+  line-height: 1.78;
   color: var(--color-text);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.prose {
+  max-width: 76ch;
+  margin: 0 auto;
 }
 .prose p,
 .markdown-body p {
-  margin: 0 0 0.95em;
+  margin: 0 0 1.05em;
 }
 
 .prose h1, .prose h2, .prose h3, .prose h4,
@@ -129,12 +135,12 @@ body {
   font-family: var(--font-serif);
   color: var(--color-text-bright);
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   line-height: 1.28;
-  margin: 1.5em 0 0.5em;
+  margin: 2em 0 0.6em;
 }
 .prose h1, .markdown-body h1 { font-size: 1.6em; border-bottom: 1px solid var(--color-border-soft); padding-bottom: 0.3em; }
-.prose h2, .markdown-body h2 { font-size: 1.28em; }
+.prose h2, .markdown-body h2 { font-size: 1.28em; color: var(--color-text-bright); border-bottom: 1px solid var(--color-border-soft); padding-bottom: 0.2em; }
 .prose h3, .markdown-body h3 { font-size: 1.1em; color: var(--color-accent); }
 .prose h4, .markdown-body h4 { font-size: 1.0em; color: var(--color-text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
 
@@ -167,7 +173,8 @@ body {
 .prose strong,
 .markdown-body strong {
   color: var(--color-accent);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.005em;
 }
 
 .prose blockquote,
@@ -227,7 +234,7 @@ body {
 }
 
 /* KaTeX — sit comfortably in the serif paragraph */
-.katex { color: var(--color-text); font-size: 1.05em; }
+.katex { color: var(--color-text); font-size: 1.05em; vertical-align: -0.05em; white-space: nowrap; }
 .katex-display {
   margin: 1.2em 0;
   padding: 0.5em 0;
