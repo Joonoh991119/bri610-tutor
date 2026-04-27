@@ -119,11 +119,27 @@ class PersonaReq(BaseModel):
 @app.get("/api/health")
 def health():
     stats = db.stats()
+    # Report the ACTIVE primary model from the harness ROUTES table for each
+    # user-facing role — the legacy CHAT_MODEL constant is back-compat only and
+    # not used by the harness call path.
+    active_models = {}
+    try:
+        from harness.llm_client import ROUTES
+        for role in ("tutor", "summary", "derive", "quiz_generator", "default"):
+            if role in ROUTES:
+                active_models[role] = {
+                    "primary": ROUTES[role].primary,
+                    "fallback_or": ROUTES[role].fallback_or,
+                    "fallback_oll": ROUTES[role].fallback_ollama,
+                }
+    except Exception as e:
+        active_models = {"error": repr(e)}
     return {
         "status": "ok",
         "version": "0.3.0",
         "backend": "postgresql+pgvector",
-        "chat_model": CHAT_MODEL,
+        "chat_model": active_models.get("tutor", {}).get("primary", CHAT_MODEL),  # tutor is the user-facing chat
+        "active_models": active_models,
         "embed_model": EMBED_MODEL,
         "db": stats,
         "retrieval": "hybrid_rrf",
