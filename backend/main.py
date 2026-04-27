@@ -417,6 +417,53 @@ def take_home_lecture(lecture: str):
         db._close(conn)
 
 
+@app.get("/api/core-summary/{lecture}")
+def core_summary_lecture(lecture: str):
+    """Final exam-ready 1-page core summary + must-memorize list."""
+    conn = db._conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT title, summary_md, must_memorize, one_line, generated_at
+                FROM core_summaries WHERE lecture = %s
+            """, (lecture,))
+            row = cur.fetchone()
+        if not row:
+            raise HTTPException(404, detail=f"No core summary for {lecture}")
+        return {
+            "lecture": lecture,
+            "title": row[0],
+            "summary_md": row[1],
+            "must_memorize": row[2],
+            "one_line": row[3],
+            "generated_at": row[4].isoformat() if row[4] else None,
+        }
+    finally:
+        db._close(conn)
+
+
+@app.get("/api/recall-quiz/{lecture}")
+def recall_quiz_lecture(lecture: str):
+    """Repeated-question recall quiz for a lecture (must-memorize cycling)."""
+    conn = db._conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, position, fact_tag, prompt, answer, accept_patterns,
+                       slide_ref, difficulty
+                FROM recall_quiz WHERE lecture = %s ORDER BY position
+            """, (lecture,))
+            rows = cur.fetchall()
+        items = [
+            {"id": r[0], "position": r[1], "fact_tag": r[2], "prompt": r[3],
+             "answer": r[4], "accept_patterns": r[5], "slide_ref": r[6], "difficulty": r[7]}
+            for r in rows
+        ]
+        return {"lecture": lecture, "count": len(items), "items": items}
+    finally:
+        db._close(conn)
+
+
 @app.get("/api/course/{lecture}")
 def course_view(lecture: str):
     """Course-inheritance view: summary + narration stub-counts + quiz/take-home counts."""

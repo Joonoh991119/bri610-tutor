@@ -95,6 +95,9 @@ export const api = {
   quizBank:      (lecture) => get(`/quiz/bank/${lecture}`),
   takeHome:      (lecture) => get(`/take-home/${lecture}`),
   courseSlim:    (lecture) => get(`/course/${lecture}`),
+  // v0.7.7 core summary (exam-ready 1-page) + recall quiz (must-memorize cycling)
+  coreSummary:   (lecture) => get(`/core-summary/${lecture}`),
+  recallQuiz:    (lecture) => get(`/recall-quiz/${lecture}`),
   // 1-hour Course
   courseOverview: () => get('/course/overview'),
   courseStart:    (userId = 1) => post(`/course/start?user_id=${userId}`, {}),

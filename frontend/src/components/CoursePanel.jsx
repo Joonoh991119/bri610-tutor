@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Play, Clock, Target, ChevronRight, CheckCircle2, XCircle, Trophy, RotateCcw, BookOpen, GraduationCap, FileQuestion, ClipboardList } from 'lucide-react'
+import { Play, Clock, Target, ChevronRight, CheckCircle2, XCircle, Trophy, RotateCcw, BookOpen, GraduationCap, FileQuestion, ClipboardList, Star, Zap } from 'lucide-react'
 import { api } from '../api'
 import Markdown from './Markdown'
 
@@ -11,7 +11,7 @@ import Markdown from './Markdown'
  * Each row queries /api/course/{lecture} for narration / quiz / take-home
  * counts and offers one-click navigation to the corresponding tab.
  */
-function LectureRow({ lecture }) {
+function LectureRow({ lecture, onOpenCore }) {
   const [data, setData] = useState(null)
   useEffect(() => {
     api.courseSlim(lecture).then(setData).catch(() => setData({}))
@@ -33,7 +33,10 @@ function LectureRow({ lecture }) {
           논술 {data?.take_home_n ?? '-'}문항
         </span>
       </div>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-6 gap-1.5">
+        <button onClick={() => onOpenCore(lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-accent/10 text-accent hover:bg-accent/20 transition-colors">
+          <Star size={14} /> 핵심
+        </button>
         <button onClick={() => goTo('summary', lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
           <BookOpen size={14} /> 서머리
         </button>
@@ -43,6 +46,9 @@ function LectureRow({ lecture }) {
         <button onClick={() => goTo('quiz', lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
           <FileQuestion size={14} /> 퀴즈
         </button>
+        <button onClick={() => onOpenCore(lecture, 'recall')} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
+          <Zap size={14} /> 암기
+        </button>
         <button onClick={() => goTo('quiz', lecture)} className="flex flex-col items-center gap-1 px-2 py-2 rounded text-[11px] bg-surface-2 hover:bg-accent/10 hover:text-accent transition-colors">
           <ClipboardList size={14} /> 논술
         </button>
@@ -51,14 +57,126 @@ function LectureRow({ lecture }) {
   )
 }
 
+// ─── Core summary modal: 1-page exam-ready + must-memorize + recall quiz ──
+
+function CoreSummaryModal({ lecture, view, onClose }) {
+  const [core, setCore] = useState(null)
+  const [recall, setRecall] = useState(null)
+  const [tab, setTab] = useState(view || 'core') // 'core' | 'recall'
+  const [answers, setAnswers] = useState({})
+  const [revealed, setRevealed] = useState({})
+
+  useEffect(() => {
+    api.coreSummary(lecture).then(setCore).catch(() => setCore({ error: true }))
+    api.recallQuiz(lecture).then(setRecall).catch(() => setRecall({ items: [] }))
+  }, [lecture])
+
+  if (!core) return null
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-bg rounded-xl border border-border max-w-3xl w-full max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-bg border-b border-border p-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-text-bright">{lecture} 핵심</h2>
+            <p className="text-xs text-text-dim mt-0.5">{core.title}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded border border-border overflow-hidden">
+              <button onClick={() => setTab('core')} className={`px-3 py-1.5 text-xs ${tab === 'core' ? 'bg-accent text-bg' : 'bg-surface-2'}`}>핵심요약</button>
+              <button onClick={() => setTab('recall')} className={`px-3 py-1.5 text-xs border-l border-border ${tab === 'recall' ? 'bg-accent text-bg' : 'bg-surface-2'}`}>암기 퀴즈</button>
+            </div>
+            <button onClick={onClose} className="text-text-dim hover:text-text">✕</button>
+          </div>
+        </div>
+
+        <div className="p-5">
+          {tab === 'core' && (
+            <>
+              <blockquote className="border-l-2 border-accent pl-3 mb-4 text-sm italic text-text-bright">
+                {core.one_line}
+              </blockquote>
+              <div className="markdown-body text-sm mb-5"><Markdown>{core.summary_md}</Markdown></div>
+              <h3 className="text-sm font-semibold text-text-bright mb-2 mt-4 flex items-center gap-2">
+                <Star size={14} className="text-accent" /> 필수 암기 ({(core.must_memorize || []).length})
+              </h3>
+              <ol className="space-y-1.5 text-xs list-decimal list-inside">
+                {(core.must_memorize || []).map((m, i) => (
+                  <li key={i} className="text-text">
+                    <span className="font-medium markdown-body inline"><Markdown>{m.fact}</Markdown></span>
+                    {m.hint && <span className="text-text-dim"> — {m.hint}</span>}
+                    {m.slide_ref && <span className="text-[10px] text-text-dim ml-1">[{m.slide_ref}]</span>}
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+
+          {tab === 'recall' && recall && (
+            <div className="space-y-4">
+              {(recall.items || []).map(q => {
+                const v = answers[q.id]
+                const reveal = revealed[q.id]
+                const ok = reveal && (q.accept_patterns || []).some(p => {
+                  try { return new RegExp(p).test(v || '') } catch { return false }
+                })
+                return (
+                  <div key={q.id} className="rounded-lg border border-border-soft p-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[10px] uppercase text-text-dim">recall · D{q.difficulty}</span>
+                      <span className="text-[10px] text-text-dim italic">#{q.fact_tag}</span>
+                      {q.slide_ref && <span className="text-[10px] text-text-dim ml-auto">[{q.slide_ref}]</span>}
+                    </div>
+                    <div className="markdown-body text-sm mb-2"><Markdown>{q.prompt}</Markdown></div>
+                    <input
+                      value={v || ''}
+                      onChange={e => !reveal && setAnswers(p => ({ ...p, [q.id]: e.target.value }))}
+                      disabled={reveal}
+                      placeholder="답 입력..."
+                      className={`w-full bg-surface-2 border rounded px-3 py-2 text-sm focus:outline-none ${reveal ? (ok ? 'border-success' : 'border-error') : 'border-border focus:border-accent/50'}`}
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      {!reveal ? (
+                        <button onClick={() => setRevealed(p => ({ ...p, [q.id]: true }))} className="text-xs text-accent hover:underline">정답 확인</button>
+                      ) : (
+                        <span className={`text-xs ${ok ? 'text-success' : 'text-error'}`}>
+                          {ok ? '✓ 정답' : '✗ 정답: '}{!ok && q.answer}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              {(recall.items || []).length === 0 && (
+                <p className="text-text-dim text-sm text-center py-8">{lecture} recall 항목이 아직 없습니다.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function StudyGuide() {
   const lectures = ['L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8']
+  const [coreOpen, setCoreOpen] = useState(null) // {lecture, view}
+
   return (
     <div className="mb-6">
       <h3 className="text-sm font-semibold text-text-bright mb-2 flex items-center gap-2">
-        <BookOpen size={14} /> 강의별 학습 가이드 (서머리 → 강의 → 퀴즈 → 논술)
+        <BookOpen size={14} /> 강의별 학습 가이드 (핵심 · 서머리 · 강의 · 퀴즈 · 암기 · 논술)
       </h3>
-      {lectures.map(l => <LectureRow key={l} lecture={l} />)}
+      {lectures.map(l => (
+        <LectureRow key={l} lecture={l} onOpenCore={(lec, view) => setCoreOpen({ lecture: lec, view: view || 'core' })} />
+      ))}
+      {coreOpen && (
+        <CoreSummaryModal
+          lecture={coreOpen.lecture}
+          view={coreOpen.view}
+          onClose={() => setCoreOpen(null)}
+        />
+      )}
     </div>
   )
 }
