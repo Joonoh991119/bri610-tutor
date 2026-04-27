@@ -1,17 +1,48 @@
 const BASE = '/api';
 
+// Per-browser user identity. The first time the app loads we mint a deterministic
+// numeric user_id derived from a UUID seed (so multiple devices/sessions on the
+// SAME browser share state, but different browsers/users are isolated).
+function getUserId() {
+  if (typeof localStorage === 'undefined') return 1;
+  let id = localStorage.getItem('bri610.user_id');
+  if (id) return Number(id);
+  // Mint a fresh id: small int hashed from a UUID, then call /api/users/ensure
+  const seed = (crypto.randomUUID && crypto.randomUUID()) ||
+               (Math.random().toString(36).slice(2) + Date.now().toString(36));
+  // Simple deterministic hash → 1..1_000_000
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  id = String((Math.abs(h) % 999999) + 2);   // avoid id=1 collision with default seed
+  localStorage.setItem('bri610.user_id', id);
+  localStorage.setItem('bri610.user_seed', seed);
+  // Fire-and-forget: backend creates the row if missing
+  fetch(`${BASE}/users/ensure?user_id=${id}`, { method: 'POST' }).catch(() => {});
+  return Number(id);
+}
+
+const USER_ID = getUserId();
+export { USER_ID };
+
+function appendUid(path) {
+  // Append user_id query param if path doesn't already specify one
+  if (path.includes('user_id=')) return path;
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}user_id=${USER_ID}`;
+}
+
 async function post(path, body) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${BASE}${appendUid(path)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ user_id: USER_ID, ...(body || {}) }),
   });
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
   return res.json();
 }
 
 async function get(path) {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${BASE}${appendUid(path)}`);
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
   return res.json();
 }

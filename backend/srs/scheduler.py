@@ -107,10 +107,13 @@ def schedule_review(card_id: int, rating: int) -> dict:
     conn = acquire()
     try:
         with conn.cursor() as cur:
+            # Row-level lock: prevents concurrent srs_review on the same card
+            # from racing on stability/difficulty updates.
             cur.execute("""
                 SELECT id, user_id, bank_item_id, state, stability, difficulty,
                        due, last_review, reps, lapses
                 FROM srs_cards WHERE id = %s
+                FOR UPDATE
             """, (card_id,))
             row = cur.fetchone()
             if not row:

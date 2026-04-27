@@ -34,14 +34,38 @@ const TABS = [
 ]
 
 const SECONDARY_IDS = new Set(['lecture', 'interactive', 'quiz', 'search'])
+const VALID_TABS = new Set(TABS.map(t => t.id))
+
+// Read tab from URL hash → localStorage → default 'chat'
+function readInitialTab() {
+  const fromHash = (typeof window !== 'undefined' && window.location.hash || '').replace('#', '')
+  if (VALID_TABS.has(fromHash)) return fromHash
+  if (typeof localStorage !== 'undefined') {
+    const stored = localStorage.getItem('bri610.tab')
+    if (stored && VALID_TABS.has(stored)) return stored
+  }
+  return 'chat'
+}
 
 export default function App() {
-  const [tab, setTab] = useState('chat')
+  const [tab, setTabState] = useState(readInitialTab)
   const [moreOpen, setMoreOpen] = useState(false)
   const [status, setStatus] = useState(null)
   const [lectures, setLectures] = useState(null)
   const [me, setMe] = useState(null)
   const meIntervalRef = useRef(null)
+
+  // Persist tab to URL hash + localStorage so refresh / hard-reload restores it.
+  // Also enables back/forward browser navigation between tabs.
+  const setTab = (next) => {
+    setTabState(next)
+    try {
+      if (window.location.hash !== `#${next}`) {
+        window.history.replaceState(null, '', `#${next}`)
+      }
+      localStorage.setItem('bri610.tab', next)
+    } catch {}
+  }
 
   useEffect(() => {
     api.health().then(setStatus).catch(() => setStatus({ status: 'offline' }))
@@ -52,7 +76,24 @@ export default function App() {
     api.streakTouch().then(setMe).catch(() => {})
 
     meIntervalRef.current = setInterval(fetchMe, 30_000)
-    return () => clearInterval(meIntervalRef.current)
+
+    // React to browser back/forward — sync state with URL hash
+    const onHashChange = () => {
+      const h = (window.location.hash || '').replace('#', '')
+      if (VALID_TABS.has(h)) setTabState(h)
+    }
+    window.addEventListener('hashchange', onHashChange)
+
+    // Ensure URL reflects initial tab (e.g., when restored from localStorage)
+    const initial = readInitialTab()
+    if (window.location.hash !== `#${initial}`) {
+      window.history.replaceState(null, '', `#${initial}`)
+    }
+
+    return () => {
+      clearInterval(meIntervalRef.current)
+      window.removeEventListener('hashchange', onHashChange)
+    }
   }, [])
 
   const goToSrs = () => setTab('srs')

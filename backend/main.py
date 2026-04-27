@@ -415,6 +415,28 @@ async def multi_lens(req: MultiLensReq):
     }
 
 
+@app.post("/api/users/ensure")
+def users_ensure(user_id: int = 1):
+    """
+    Idempotently create a `users` row for an auto-issued per-browser user_id.
+    Called by the frontend on first load (when localStorage has no bri610.user_id).
+    Safe under concurrent requests via INSERT ... ON CONFLICT DO NOTHING.
+    """
+    from db_pool import acquire, release
+    conn = acquire()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO users (id, email, display_name)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (id) DO NOTHING
+            """, (user_id, f'user{user_id}@bri610.local', f'학습자 {user_id}'))
+            conn.commit()
+        return {"ok": True, "user_id": user_id}
+    finally:
+        release(conn)
+
+
 @app.get("/api/me")
 def get_me(user_id: int = 1):
     """
@@ -875,13 +897,15 @@ def course_answer(req: CourseAnswerReq):
                 VALUES (%s, %s, %s, %s, %s)
             """, (req.run_id, req.question_id, req.user_answer, correct, req.time_spent_s))
 
+            # Atomic increment under row-level lock — prevents two concurrent
+            # /api/course/answer calls on the same run from double-incrementing.
             cur.execute("""
                 UPDATE course_runs
                 SET current_index = current_index + 1,
                     correct_count = correct_count + %s,
                     total_attempted = total_attempted + 1,
                     total_time_s = total_time_s + %s
-                WHERE id = %s
+                WHERE id = %s AND status = 'in_progress'
                 RETURNING current_index, correct_count, total_attempted
             """, (1 if correct else 0, req.time_spent_s, req.run_id))
             updated = cur.fetchone()
