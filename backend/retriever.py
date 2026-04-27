@@ -141,33 +141,23 @@ class HybridRetriever:
         return [(r['similarity'], dict(r)) for r in rows]
 
     def _vector_search_textbook(self, query_vec, limit=15):
-        """
-        Dual-vector search on textbook_pages:
-        - text_embedding <=> query (primary)
-        - image_embedding <=> query (supplementary for visual pages)
-        Score = max(text_sim, image_sim) — ensures no information loss
-        """
+        """Vector search on textbook_pages.text_embedding_v2 (BGE-M3 1024-dim).
+        Image embeddings dropped in v0.5.4 — text-only retrieval now."""
         conn = self._conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
             SELECT id, book, page_num, chapter, chapter_title, section_title,
                    content, page_type, has_equations, has_figures,
-                   CASE WHEN text_embedding IS NOT NULL
-                        THEN 1 - (text_embedding <=> %(vec)s::vector) ELSE 0 END AS text_sim,
-                   CASE WHEN image_embedding IS NOT NULL
-                        THEN 1 - (image_embedding <=> %(vec)s::vector) ELSE 0 END AS img_sim
+                   1 - (text_embedding_v2 <=> %(vec)s::vector) AS text_sim,
+                   0::float AS img_sim
             FROM textbook_pages
-            WHERE qc_status = 'passed'
-              AND (text_embedding IS NOT NULL OR image_embedding IS NOT NULL)
-            ORDER BY GREATEST(
-                COALESCE(1 - (text_embedding <=> %(vec)s::vector), 0),
-                COALESCE(1 - (image_embedding <=> %(vec)s::vector), 0)
-            ) DESC
+            WHERE qc_status = 'passed' AND text_embedding_v2 IS NOT NULL
+            ORDER BY text_embedding_v2 <=> %(vec)s::vector
             LIMIT %(limit)s
         """, {'vec': query_vec, 'limit': limit})
         rows = cur.fetchall()
         self._close(conn)
-        return [(max(r['text_sim'] or 0, r['img_sim'] or 0), dict(r)) for r in rows]
+        return [(r['text_sim'] or 0, dict(r)) for r in rows]
 
     # ─── Full-Text Search (PostgreSQL tsvector) ───
 
@@ -239,9 +229,9 @@ class HybridRetriever:
         # Check if any embeddings exist
         conn = self._conn()
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM slides WHERE embedding IS NOT NULL")
+        cur.execute("SELECT COUNT(*) FROM slides WHERE embedding_v2 IS NOT NULL")
         has_vec = cur.fetchone()[0] > 0
-        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding IS NOT NULL OR image_embedding IS NOT NULL")
+        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding_v2 IS NOT NULL OR FALSE")
         has_tb_vec = cur.fetchone()[0] > 0
         self._close(conn)
 

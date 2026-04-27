@@ -356,8 +356,29 @@ async def narrate_step(session_id: str, *, expand: bool = True) -> dict:
     if not expand:
         return base
 
-    # Build a Tutor prompt that explicitly references the slide refs and
-    # instruction. The harness routes this through DeepSeek v4 pro by default.
+    # Cache-first: serve pre-generated narration from `lecture_narrations` table
+    # (no LLM round-trip → instant response). Table populated by
+    # scripts/finalize_db.py on demand.
+    try:
+        from db_pool import acquire as _acq, release as _rel
+        conn = _acq()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT narration_md, model FROM lecture_narrations
+                    WHERE lecture=%s AND step_id=%s
+                """, (plan.lecture_id, step.step_id))
+                row = cur.fetchone()
+            if row and row[0]:
+                base["narration_md"] = row[0]
+                base["route_used"] = (row[1] or "cached") + " (cached)"
+                return base
+        finally:
+            _rel(conn)
+    except Exception as e:
+        log.warning("narration cache lookup failed: %s", e)
+
+    # Live LLM expansion if no cache hit
     try:
         from harness import call_llm
         slide_list = ", ".join(f"[Slide {r}]" for r in step.slide_refs)

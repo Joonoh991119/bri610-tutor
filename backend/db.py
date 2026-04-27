@@ -44,12 +44,12 @@ class DB:
         # Prefer v2 (BGE-M3 1024-dim) embeddings; fall back to legacy v1 (Nemotron 2048)
         cur.execute("SELECT COUNT(*) FROM slides WHERE embedding_v2 IS NOT NULL")
         slides_v2 = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM slides WHERE embedding IS NOT NULL")
+        cur.execute("SELECT COUNT(*) FROM slides WHERE embedding_v2 IS NOT NULL")
         slides_v1 = cur.fetchone()[0]
         slides_emb = max(slides_v2, slides_v1)
         cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding_v2 IS NOT NULL")
         pages_v2 = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding IS NOT NULL")
+        cur.execute("SELECT COUNT(*) FROM textbook_pages WHERE text_embedding_v2 IS NOT NULL")
         pages_v1 = cur.fetchone()[0]
         pages_emb = max(pages_v2, pages_v1)
         self._close(conn)
@@ -65,15 +65,15 @@ class DB:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
             SELECT lecture, lecture_title,
-                   COUNT(*) AS total, COUNT(embedding) AS embedded
+                   COUNT(*) AS total, COUNT(embedding_v2) AS embedded
             FROM slides GROUP BY lecture, lecture_title ORDER BY lecture
         """)
         slides = [dict(r) for r in cur.fetchall()]
         cur.execute("""
             SELECT book,
                    COUNT(*) FILTER (WHERE qc_status='passed') AS total,
-                   COUNT(text_embedding) FILTER (WHERE qc_status='passed') AS text_emb,
-                   COUNT(image_embedding) FILTER (WHERE qc_status='passed') AS img_emb
+                   COUNT(text_embedding_v2) FILTER (WHERE qc_status='passed') AS text_emb,
+                   0::int AS img_emb
             FROM textbook_pages GROUP BY book ORDER BY book
         """)
         books = [dict(r) for r in cur.fetchall()]
