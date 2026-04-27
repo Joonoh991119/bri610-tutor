@@ -40,7 +40,7 @@
   <text x="200" y="158" text-anchor="middle" fill="#1f2328" font-weight="600">balance point</text>
 
   <!-- divider -->
-  <line x1="60" y1="234" x2="540" y2="234" stroke="#dee2e7" stroke-width="0.7"/>
+  <line x1="60" y1="234" x2="540" y2="234" stroke="#d0d7de" stroke-width="0.7"/>
 
   <!-- two scenarios bar -->
   <text x="60" y="252" fill="#1f2328" font-weight="600">Why V_rest sits near E_K</text>
@@ -61,5 +61,5 @@
 
   <!-- footer -->
   <text x="60" y="344" fill="#57606a" font-style="italic">V_∞ moves between E_K and E_Na as the g_K : g_Na ratio shifts.</text>
-  <text x="540" y="344" text-anchor="end" fill="#8c959f" font-size="10">Slide L3 p.30</text>
+  <text font-style="italic" x="540" y="344" text-anchor="end" fill="#8c959f" font-size="10">Slide L3 p.30</text>
 </svg>

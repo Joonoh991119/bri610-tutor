@@ -10,7 +10,7 @@
 
   <!-- Trial 1 -->
   <text x="60" y="68" fill="#57606a">trial 1</text>
-  <line x1="100" y1="62" x2="540" y2="62" stroke="#dee2e7" stroke-width="0.7"/>
+  <line x1="100" y1="62" x2="540" y2="62" stroke="#d0d7de" stroke-width="0.7"/>
   <line x1="120" y1="56" x2="120" y2="68" stroke="#1f2328" stroke-width="1.2"/>
   <line x1="160" y1="56" x2="160" y2="68" stroke="#1f2328" stroke-width="1.2"/>
   <line x1="180" y1="56" x2="180" y2="68" stroke="#1f2328" stroke-width="1.2"/>
@@ -21,7 +21,7 @@
 
   <!-- Trial 2 -->
   <text x="60" y="92" fill="#57606a">trial 2</text>
-  <line x1="100" y1="86" x2="540" y2="86" stroke="#dee2e7" stroke-width="0.7"/>
+  <line x1="100" y1="86" x2="540" y2="86" stroke="#d0d7de" stroke-width="0.7"/>
   <line x1="135" y1="80" x2="135" y2="92" stroke="#1f2328" stroke-width="1.2"/>
   <line x1="170" y1="80" x2="170" y2="92" stroke="#1f2328" stroke-width="1.2"/>
   <line x1="195" y1="80" x2="195" y2="92" stroke="#1f2328" stroke-width="1.2"/>
@@ -32,7 +32,7 @@
 
   <!-- Trial 3 -->
   <text x="60" y="116" fill="#57606a">trial 3</text>
-  <line x1="100" y1="110" x2="540" y2="110" stroke="#dee2e7" stroke-width="0.7"/>
+  <line x1="100" y1="110" x2="540" y2="110" stroke="#d0d7de" stroke-width="0.7"/>
   <line x1="125" y1="104" x2="125" y2="116" stroke="#1f2328" stroke-width="1.2"/>
   <line x1="155" y1="104" x2="155" y2="116" stroke="#1f2328" stroke-width="1.2"/>
   <line x1="190" y1="104" x2="190" y2="116" stroke="#1f2328" stroke-width="1.2"/>
@@ -106,5 +106,5 @@
   <text x="60" y="328" fill="#57606a">• <tspan fill="#1f2328" font-weight="600">PSTH</tspan>: trial-average — needs repeats, fails single-trial decoding</text>
   <text x="60" y="342" fill="#57606a">• <tspan fill="#1f2328" font-weight="600">population rate</tspan>: instantaneous neuron-average — single-trial OK</text>
 
-  <text x="540" y="355" text-anchor="end" fill="#8c959f" font-size="10">Slide L8 p.20–25</text>
+  <text font-style="italic" x="540" y="355" text-anchor="end" fill="#8c959f" font-size="10">Slide L8 p.20–25</text>
 </svg>
